@@ -35,6 +35,14 @@ type Subject struct {
 	X    int
 }
 
+type Room struct {
+	ID            string
+	NAME          string
+	X             int
+	NOT_AVAILABLE []([]int)
+	SUBROOMS      []int // room group: indexes of component rooms
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}

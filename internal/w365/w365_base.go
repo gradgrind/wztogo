@@ -31,6 +31,8 @@ const w365_FirstAfternoonHour = "FirstAfternoonHour"
 const w365_Category = "Category"
 const w365_Categories = "Categories"
 const w365_Subject = "Subject"
+const w365_Room = "Room"
+const w365_RoomGroup = "RoomGroup"
 
 type ItemType map[string]string
 
