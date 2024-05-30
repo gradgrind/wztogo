@@ -34,7 +34,8 @@ func (w365data *W365Data) read_subjects() {
 		}
 		return 1
 	})
-	for _, xs := range xnodes {
+	for i, xs := range xnodes {
+		xs.subject.X = i
 		w365data.add_node("SUBJECTS", xs.subject, xs.wid)
 	}
 }

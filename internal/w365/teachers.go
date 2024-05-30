@@ -8,13 +8,13 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 )
 
-type xteacher struct {
-	sortnum float64
-	wid     string
-	teacher wzbase.Teacher
-}
-
 func (w365data *W365Data) read_teachers() {
+	type xteacher struct {
+		sortnum float64
+		wid     string
+		teacher wzbase.Teacher
+	}
+
 	xnodes := []xteacher{}
 	for _, node := range w365data.yeartables[w365_Teacher] {
 		id := node[w365_Shortcut]

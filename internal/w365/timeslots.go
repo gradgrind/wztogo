@@ -8,14 +8,14 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 )
 
-type xday struct {
-	sortnum float64
-	wid     string
-	tag     string
-	name    string
-}
-
 func (w365data *W365Data) read_days() {
+	type xday struct {
+		sortnum float64
+		wid     string
+		tag     string
+		name    string
+	}
+
 	xnodes := []xday{}
 	for _, node := range w365data.yeartables[w365_Day] {
 		sf, err := strconv.ParseFloat(node[w365_ListPosition], 64)
@@ -52,20 +52,18 @@ func (w365data *W365Data) read_days() {
 	}
 }
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-type xhour struct {
-	sortnum    float64
-	wid        string
-	tag        string
-	name       string
-	start_time string
-	end_time   string
-	_lb        bool
-	_pm        bool
-}
-
 func (w365data *W365Data) read_hours() {
+	type xhour struct {
+		sortnum    float64
+		wid        string
+		tag        string
+		name       string
+		start_time string
+		end_time   string
+		_lb        bool
+		_pm        bool
+	}
+
 	xnodes := []xhour{}
 	for _, node := range w365data.yeartables[w365_Period] {
 		sf, err := strconv.ParseFloat(node[w365_ListPosition], 64)

@@ -32,6 +32,7 @@ type Teacher struct {
 type Subject struct {
 	ID   string
 	NAME string
+	X    int
 }
 
 type WZnode struct {
