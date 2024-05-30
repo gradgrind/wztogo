@@ -19,6 +19,7 @@ func TestReadW365(t *testing.T) {
 	fmt.Printf("\n§§TableMap: %#v\n", db.TableMap)
 	db.read_hours()
 	fmt.Printf("\n§§Config: %#v\n", db.Config)
+	db.read_subjects()
 	db.read_absences()
 	fmt.Printf("\n§§absences: %#v\n", db.absencemap)
 	db.read_categories()

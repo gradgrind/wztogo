@@ -29,6 +29,11 @@ type Teacher struct {
 	NOT_AVAILABLE []([]int)
 }
 
+type Subject struct {
+	ID   string
+	NAME string
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}

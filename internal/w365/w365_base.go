@@ -30,6 +30,7 @@ const w365_MiddayBreak = "MiddayBreak"
 const w365_FirstAfternoonHour = "FirstAfternoonHour"
 const w365_Category = "Category"
 const w365_Categories = "Categories"
+const w365_Subject = "Subject"
 
 type ItemType map[string]string
 
