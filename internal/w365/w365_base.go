@@ -33,6 +33,19 @@ const w365_Categories = "Categories"
 const w365_Subject = "Subject"
 const w365_Room = "Room"
 const w365_RoomGroup = "RoomGroup"
+const w365_StudentId = "ExtraId"
+const w365_Student = "Student"
+const w365_Firstnames = "Firstname"
+const w365_First_Name = "Zusatz 1" // !
+const w365_DateOfBirth = "DateOfBirth"
+const w365_PlaceOfBirth = "CityOfBirth"
+const w365_DateOfEntry = "Zusatz 2" // !
+const w365_DateOfExit = "Zusatz 3"  // !
+const w365_Home = "City"
+const w365_Postcode = "PLZ"
+const w365_Street = "Street"
+const w365_Email = "Email"
+const w365_PhoneNumber = "PhoneNumber"
 
 type ItemType map[string]string
 

@@ -43,6 +43,24 @@ type Room struct {
 	SUBROOMS      []int // room group: indexes of component rooms
 }
 
+type Student struct {
+	ID         string
+	SORTNAME   string
+	LASTNAME   string
+	FIRSTNAMES string
+	FIRSTNAME  string
+	GENDER     string
+	DATE_BIRTH string
+	BIRTHPLACE string
+	DATE_ENTRY string
+	DATE_EXIT  string
+	HOME       string
+	POSTCODE   string
+	STREET     string
+	EMAIL      string
+	PHONE      string
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}

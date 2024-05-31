@@ -26,6 +26,7 @@ func TestReadW365(t *testing.T) {
 	db.read_categories()
 	fmt.Printf("\n§§categories: %#v\n", db.categorymap)
 	db.read_teachers()
+	db.read_groups()
 	for i, n := range db.NodeList {
 		fmt.Printf("\n§node %4d: %#v\n", i, n)
 	}
