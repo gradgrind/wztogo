@@ -35,6 +35,9 @@ const w365_Room = "Room"
 const w365_RoomGroup = "RoomGroup"
 const w365_StudentId = "ExtraId"
 const w365_Student = "Student"
+const w365_Students = "Students"
+const w365_Group = "Group"
+const w365_Groups = "Groups"
 const w365_Firstnames = "Firstname"
 const w365_First_Name = "Zusatz 1" // !
 const w365_DateOfBirth = "DateOfBirth"
@@ -46,6 +49,12 @@ const w365_Postcode = "PLZ"
 const w365_Street = "Street"
 const w365_Email = "Email"
 const w365_PhoneNumber = "PhoneNumber"
+const w365_Year = "Grade"
+const w365_YearDiv = "GradePartiton" // sic
+const w365_YearDivs = "GradePartitions"
+const w365_Level = "Level"
+const w365_Letter = "Letter"
+const w365_EpochFactor = "EpochFactor"
 
 type ItemType map[string]string
 

@@ -61,6 +61,23 @@ type Student struct {
 	PHONE      string
 }
 
+type Group struct {
+	ID       string
+	STUDENTS []int
+}
+
+type DivGroups struct {
+	Tag    string
+	Groups []int
+}
+
+type Class struct {
+	ID           string // normal short name of class
+	SORTING      string // sortable short name of class
+	BLOCK_FACTOR float64
+	STUDENTS     []int
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}
