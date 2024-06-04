@@ -13,23 +13,14 @@ import (
 // Manage the reading of classes and the associated students, groups
 // and divisions.
 func (w365data *W365Data) read_groups() {
-
 	w365data.read_students()
 	w365data.read_subgroups()
-	/*
-		type xdg struct {
-			sortnum float64
-
-		}
-		xdglist := []xdg{}
-
-				af, err := strconv.ParseFloat(a[w365_ListPosition], 64)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-	*/
 	// Get all class divisions
+	type xclass struct {
+		node wzbase.Class
+		wid  string
+	}
+	xclasses := []xclass{}
 	wid2divgroups := map[string]wzbase.DivGroups{}
 	for _, node := range w365data.yeartables[w365_YearDiv] {
 		name := node[w365_Name]
@@ -42,18 +33,7 @@ func (w365data *W365Data) read_groups() {
 		}
 		//fmt.Printf("??? DivGroup %s: %+v\n", name, gklist)
 	}
-	/*
-		// Sort the groups	//TODO: Is this necessary?
-		slices.SortFunc(xnodes, func(a, b xdg) int {
-			if a.sortnum <= b.sortnum {
-				return -1
-			}
-			return 1
-		})
-	*/
-
 	// Get data associated with the classes
-	//group_list := []int{} // collect group keys for each class (year)
 	for _, node := range w365data.yeartables[w365_Year] { // Waldorf365: "Grade"
 		clevel := node[w365_Level]
 		cletter := node[w365_Letter]
@@ -108,13 +88,19 @@ func (w365data *W365Data) read_groups() {
 			STUDENTS:     skeys,
 			DIVISIONS:    divlist,
 		}
-		//TODO--
-		fmt.Printf("??? Class: %+v\n", xnode)
-		w365data.add_node("CLASSES", xnode, node[w365_Id])
+		xclasses = append(xclasses, xclass{xnode, node[w365_Id]})
 	}
-
-	//TODO: Sort the classes?
-
+	// Sort the classes
+	slices.SortFunc(xclasses, func(a, b xclass) int {
+		if a.node.SORTING <= b.node.SORTING {
+			return -1
+		}
+		return 1
+	})
+	for _, xc := range xclasses {
+		w365data.add_node("CLASSES", xc.node, xc.wid)
+	}
+	//TODO
 	/*
 	   gen_class_groups(w365_db.nodes, xnode)
 	   #print("  *** $GROUP_ATOM_MAP:", xnode["$GROUP_ATOM_MAP"])
@@ -136,6 +122,91 @@ func (w365data *W365Data) read_groups() {
 	       xnode["EXTRA"] = c
 	*/
 }
+
+/*
+#TODO: The following classes would also be relevant for other data
+# sources. Perhaps they should be moved to a different folder?
+class AG(frozenset):
+    def __repr__(self):
+        return f"{{*{','.join(sorted(self))}*}}"
+
+    def __str__(self):
+        return AG_SEP.join(sorted(self))
+
+
+def gen_class_groups(key2node, node):
+    """Produce "atomic" groups for the given class partitions.
+    This should be rerun whenever any change is made to the partitions –
+    including just name changes because the group names are used here.
+    <parts> is a list of tuples:
+        - name: the partition name (can be empty)
+        - list of basic partition group keys
+        - list of "compound" groups:
+            [compound group key, basic group key, basic group key, ...]
+    """
+    parts = node["PARTITIONS"]
+    if not parts:
+        node["$GROUP_ATOM_MAP"] = {"": set()}
+        return
+    # Check the input
+    gset = set()
+    divs1 = []
+    divs1x = []
+    for n, d, dx in parts:
+        gs = []
+        xg = {}
+        divs1.append(gs)
+        divs1x.append(xg)
+        for gk in d:
+            g = key2node[gk]["ID"]
+#TODO: use something more helpful than the assertion
+            assert g not in gset
+            gset.add(g)
+            # "Compound" groups are combinations of "basic" groups,
+            # as a convenience for input and display of multiple groups
+            # within a division (not supported in Waldorf365).
+            # Consider a division ["A", "BG", "R"]. There could be
+            # courses, say, for combination "A" + "BG". The "compound"
+            # group might then be "G", defined as "G=A+BG". Obviously, if
+            # this format is used, the symbols "=" and "+" should not be
+            # used in group names.
+            gs.append(g)   # A "basic" group
+        # Deal with compound groups
+        for gx in dx:
+#TODO: use something more helpful than the assertion
+            assert len(gx) > 2
+            gc = key2node[gx[0]]["ID"]
+            xgl = []
+            for gk in gx[1:]:
+                g = key2node[gk]["ID"]
+#TODO: use something more helpful than the assertion
+                assert g in gs
+                xgl.append(g)
+            xg[gc] = xgl
+#TODO: use something more helpful than the assertion
+        assert len(gs) > 1
+    # Generate "atomic" groups
+    g2ag = {}
+    aglist = []
+    for p in product(*divs1):
+        ag = AG(p)
+        aglist.append(ag)
+        for g in p:
+            try:
+                g2ag[g].add(ag)
+            except KeyError:
+                g2ag[g] = {ag}
+    for xg in divs1x:
+        for g, gl in xg.items():
+            ags = set()
+            for gg in gl:
+                ags.update(g2ag[gg])
+            g2ag[g] = ags
+    # Add the atomic groups for the whole class
+    g2ag[""] = set(aglist)
+    node["$GROUP_ATOM_MAP"] = g2ag
+
+*/
 
 func (w365data *W365Data) read_subgroups() {
 	// I don't think sorting makes much sense here.
