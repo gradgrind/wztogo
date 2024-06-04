@@ -29,6 +29,7 @@ func (w365data *W365Data) read_groups() {
 				}
 
 	*/
+	// Get all class divisions
 	wid2divgroups := map[string]wzbase.DivGroups{}
 	for _, node := range w365data.yeartables[w365_YearDiv] {
 		name := node[w365_Name]
@@ -51,17 +52,50 @@ func (w365data *W365Data) read_groups() {
 		})
 	*/
 
-	//group_list := []int{}                              // collect group keys for each class (year)
+	// Get data associated with the classes
+	//group_list := []int{} // collect group keys for each class (year)
 	for _, node := range w365data.yeartables[w365_Year] { // Waldorf365: "Grade"
 		clevel := node[w365_Level]
 		cletter := node[w365_Letter]
 		cltag := clevel + cletter
+		// Get the students associated with the class
 		students := node[w365_Students]
 		skeys := []int{}
 		if students != "" {
 			for _, s := range strings.Split(students, LIST_SEP) {
 				skeys = append(skeys, w365data.NodeMap[s])
 			}
+		}
+		// Get all groups associated with the class
+		class_groups := map[int]int{}
+		for _, n := range strings.Split(node[w365_Groups], LIST_SEP) {
+			class_groups[w365data.NodeMap[n]]++
+		}
+		// Get the divisions associated with the class, and their groups
+		divlist := []wzbase.DivGroups{}
+		divs := node[w365_YearDivs]
+		if divs != "" {
+			for i, divid := range strings.Split(divs, LIST_SEP) {
+				divgroups := wid2divgroups[divid]
+				if divgroups.Tag == "" {
+					divgroups.Tag = fmt.Sprintf("#%d", i)
+				}
+				for _, g := range divgroups.Groups {
+					class_groups[g]--
+				}
+				divlist = append(divlist, divgroups)
+			}
+		}
+		g0list := []int{}
+		for g, n := range class_groups {
+			if n > 0 {
+				g0list = append(g0list, g)
+			}
+		}
+		if len(g0list) > 1 {
+			divlist = append(divlist, wzbase.DivGroups{
+				Tag: "", Groups: g0list,
+			})
 		}
 		af, err := strconv.ParseFloat(node[w365_EpochFactor], 64)
 		if err != nil {
@@ -72,48 +106,34 @@ func (w365data *W365Data) read_groups() {
 			SORTING:      fmt.Sprintf("%02s%s", clevel, cletter),
 			BLOCK_FACTOR: af,
 			STUDENTS:     skeys,
+			DIVISIONS:    divlist,
 		}
 		//TODO--
 		fmt.Printf("??? Class: %+v\n", xnode)
+		w365data.add_node("CLASSES", xnode, node[w365_Id])
 	}
 
 	//TODO: Sort the classes?
 
 	/*
-		        // Finish the groups later, when the dbkeys are available ...
-		        // Collect the necessary info in <g365_info> and <w365id_nodes>.
-		        yid365 = node[w365_Id]
-		        w365id_nodes.append((yid365, xnode))
-		        divklist = []
-		        yklist = []
-		        divs = node[w365_YearDivs]
-		        if divs != "" {
-		            for divid in divs.split(LIST_SEP):
-		                divname, gklist = id2kdiv[divid]
-		                divklist.append([divname, gklist, []])
-		                yklist.append(gklist)
-				}
-		        group_list.append((yid365, yklist))
-		        #print(f'*** {cltag}: {divklist}')
-		        xnode["PARTITIONS"] = divklist
-		        gen_class_groups(w365_db.nodes, xnode)
-		        #print("  *** $GROUP_ATOM_MAP:", xnode["$GROUP_ATOM_MAP"])
-		        constraints = {
-		            _f: node[f]
-		            for f, _f in (
-		                (_ForceFirstHour, "ForceFirstHour"),
-		                (_MaxLessonsPerDay, "MaxLessonsPerDay"),
-		                (_MinLessonsPerDay, "MinLessonsPerDay"),
-		                (_NumberOfAfterNoonDays, "NumberOfAfterNoonDays"),
-		            )
-		        }
-		        xnode["CONSTRAINTS"] = constraints
-		        a = absences(w365_db.idmap, node)
-		        if a:
-		            xnode["NOT_AVAILABLE"] = a
-		        c = categories(w365_db.idmap, node)
-		        if c:
-		            xnode["EXTRA"] = c
+	   gen_class_groups(w365_db.nodes, xnode)
+	   #print("  *** $GROUP_ATOM_MAP:", xnode["$GROUP_ATOM_MAP"])
+	   constraints = {
+	       _f: node[f]
+	       for f, _f in (
+	           (_ForceFirstHour, "ForceFirstHour"),
+	           (_MaxLessonsPerDay, "MaxLessonsPerDay"),
+	           (_MinLessonsPerDay, "MinLessonsPerDay"),
+	           (_NumberOfAfterNoonDays, "NumberOfAfterNoonDays"),
+	       )
+	   }
+	   xnode["CONSTRAINTS"] = constraints
+	   a = absences(w365_db.idmap, node)
+	   if a:
+	       xnode["NOT_AVAILABLE"] = a
+	   c = categories(w365_db.idmap, node)
+	   if c:
+	       xnode["EXTRA"] = c
 	*/
 }
 

@@ -76,6 +76,7 @@ type Class struct {
 	SORTING      string // sortable short name of class
 	BLOCK_FACTOR float64
 	STUDENTS     []int
+	DIVISIONS    []DivGroups
 }
 
 type WZnode struct {
