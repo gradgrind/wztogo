@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gradgrind/wztogo/internal/wzbase"
+	// mapset "github.com/deckarep/golang-set/v2"
 )
 
 // Manage the reading of classes and the associated students, groups
@@ -121,6 +122,54 @@ func (w365data *W365Data) read_groups() {
 	   if c:
 	       xnode["EXTRA"] = c
 	*/
+}
+
+func gen_class_groups(class_divisions []wzbase.DivGroups) ([]int, [][]int) {
+	// If there is any ordering, it must be visible in the input data, no
+	// sorting is done here.
+	lists := [][]int{}
+	glist0 := []int{}
+	if len(class_divisions) != 0 {
+		for _, divgroups := range class_divisions {
+			lists2 := [][]int{}
+			if divgroups.Tag == "" {
+				continue
+			}
+			for _, g := range divgroups.Groups {
+				glist0 = append(glist0, g)
+				if len(lists) == 0 {
+					lists2 = append(lists2, []int{g})
+				} else {
+					for j := range len(lists) {
+						lists2 = append(lists2, append(lists[j], g))
+					}
+				}
+			}
+			lists = lists2
+		}
+	}
+	fmt.Printf("** gen_class_groups: %+v\n", lists)
+	//TODO: For testing use a simple integer bitmap, but it should probably
+	// be a "roaringbitmap". With the latter I can use a single bitmap for
+	// all classes. Whether I should, is another matter, though.
+	g2ag := map[int]int{}
+	i := 1
+	if len(lists) == 0 {
+		g2ag[0] = i
+	} else {
+		for _, glist := range lists {
+			for _, g := range glist {
+				g2ag[g] |= i
+			}
+			i <<= 1
+		}
+		g2ag[0] = i - 1
+	}
+	for g, i := range g2ag {
+		fmt.Printf("  [%d: %b]", g, i)
+	}
+	fmt.Println()
+	return glist0, lists
 }
 
 /*

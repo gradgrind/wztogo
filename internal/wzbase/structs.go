@@ -79,6 +79,11 @@ type Class struct {
 	DIVISIONS    []DivGroups
 }
 
+type ClassGroup struct {
+	CIX int
+	GIX int
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}
