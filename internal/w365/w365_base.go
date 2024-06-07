@@ -55,6 +55,7 @@ const w365_YearDivs = "GradePartitions"
 const w365_Level = "Level"
 const w365_Letter = "Letter"
 const w365_EpochFactor = "EpochFactor"
+const w365_ForceFirstHour = "ForceFirstHour"
 
 type ItemType map[string]string
 

@@ -72,11 +72,13 @@ type DivGroups struct {
 }
 
 type Class struct {
-	ID           string // normal short name of class
-	SORTING      string // sortable short name of class
-	BLOCK_FACTOR float64
-	STUDENTS     []int
-	DIVISIONS    []DivGroups
+	ID            string // normal short name of class
+	SORTING       string // sortable short name of class
+	BLOCK_FACTOR  float64
+	STUDENTS      []int
+	DIVISIONS     []DivGroups
+	CONSTRAINTS   map[string]string
+	NOT_AVAILABLE []([]int)
 }
 
 type ClassGroup struct {

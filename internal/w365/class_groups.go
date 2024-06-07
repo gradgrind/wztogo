@@ -82,12 +82,25 @@ func (w365data *W365Data) read_groups() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		constraints := map[string]string{
+			"ForceFirstHour":        node[w365_ForceFirstHour],
+			"MaxLessonsPerDay":      node[w365_MaxLessonsPerDay],
+			"MinLessonsPerDay":      node[w365_MinLessonsPerDay],
+			"NumberOfAfterNoonDays": node[w365_NumberOfAfterNoonDays],
+		}
+		a := w365data.absences(node)
+		// Get additional info from the "categories"
+		//TODO: Are any of the Categories relevant for classes?
+		// c := w365data.categories(node)
+		// log.Printf("***(%s) %#v", name, c)
 		xnode := wzbase.Class{
-			ID:           cltag,
-			SORTING:      fmt.Sprintf("%02s%s", clevel, cletter),
-			BLOCK_FACTOR: af,
-			STUDENTS:     skeys,
-			DIVISIONS:    divlist,
+			ID:            cltag,
+			SORTING:       fmt.Sprintf("%02s%s", clevel, cletter),
+			BLOCK_FACTOR:  af,
+			STUDENTS:      skeys,
+			DIVISIONS:     divlist,
+			CONSTRAINTS:   constraints,
+			NOT_AVAILABLE: a,
 		}
 		xclasses = append(xclasses, xclass{xnode, node[w365_Id]})
 	}
