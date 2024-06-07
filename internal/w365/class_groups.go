@@ -98,13 +98,28 @@ func (w365data *W365Data) read_groups() {
 		}
 		return 1
 	})
+	// Add each class to the data structures and build atomic groups
+	ag := wzbase.NewAtomicGroups()
 	for _, xc := range xclasses {
-		w365data.add_node("CLASSES", xc.node, xc.wid)
+		i := w365data.add_node("CLASSES", xc.node, xc.wid)
+		ag.Add_class_groups(i, xc.node)
 	}
-	//TODO
+	//TODO: Add the atomic group data to the general data structures.
+	// Which form should I use? Probably cg2rbm.
+	// Then I can comment out c2groups.
+	// On the other hand I should separate out the class-handling bit
+	// so that a class can be changed individually (when editing).
+	// And it can be moved out of the w365 specific bit?
+	// Because of the serial indexing it might be better to redo the
+	// atomic groups completely when there is a change to class groups?
+	// How are group changes handled as far as courses, etc., are
+	// concerned? Surely if a group is removed, any associated courses
+	// must also be removed (prompt!), mustn't they?
+
+	//TODO: Compound groups ...
+
+	//TODO:
 	/*
-	   gen_class_groups(w365_db.nodes, xnode)
-	   #print("  *** $GROUP_ATOM_MAP:", xnode["$GROUP_ATOM_MAP"])
 	   constraints = {
 	       _f: node[f]
 	       for f, _f in (
@@ -123,139 +138,6 @@ func (w365data *W365Data) read_groups() {
 	       xnode["EXTRA"] = c
 	*/
 }
-
-func gen_class_groups(class_divisions []wzbase.DivGroups) ([]int, [][]int) {
-	// If there is any ordering, it must be visible in the input data, no
-	// sorting is done here.
-	lists := [][]int{}
-	glist0 := []int{}
-	if len(class_divisions) != 0 {
-		for _, divgroups := range class_divisions {
-			lists2 := [][]int{}
-			if divgroups.Tag == "" {
-				continue
-			}
-			for _, g := range divgroups.Groups {
-				glist0 = append(glist0, g)
-				if len(lists) == 0 {
-					lists2 = append(lists2, []int{g})
-				} else {
-					for j := range len(lists) {
-						lists2 = append(lists2, append(lists[j], g))
-					}
-				}
-			}
-			lists = lists2
-		}
-	}
-	fmt.Printf("** gen_class_groups: %+v\n", lists)
-	//TODO: For testing use a simple integer bitmap, but it should probably
-	// be a "roaringbitmap". With the latter I can use a single bitmap for
-	// all classes. Whether I should, is another matter, though.
-	g2ag := map[int]int{}
-	i := 1
-	if len(lists) == 0 {
-		g2ag[0] = i
-	} else {
-		for _, glist := range lists {
-			for _, g := range glist {
-				g2ag[g] |= i
-			}
-			i <<= 1
-		}
-		g2ag[0] = i - 1
-	}
-	for g, i := range g2ag {
-		fmt.Printf("  [%d: %b]", g, i)
-	}
-	fmt.Println()
-	return glist0, lists
-}
-
-/*
-#TODO: The following classes would also be relevant for other data
-# sources. Perhaps they should be moved to a different folder?
-class AG(frozenset):
-    def __repr__(self):
-        return f"{{*{','.join(sorted(self))}*}}"
-
-    def __str__(self):
-        return AG_SEP.join(sorted(self))
-
-
-def gen_class_groups(key2node, node):
-    """Produce "atomic" groups for the given class partitions.
-    This should be rerun whenever any change is made to the partitions –
-    including just name changes because the group names are used here.
-    <parts> is a list of tuples:
-        - name: the partition name (can be empty)
-        - list of basic partition group keys
-        - list of "compound" groups:
-            [compound group key, basic group key, basic group key, ...]
-    """
-    parts = node["PARTITIONS"]
-    if not parts:
-        node["$GROUP_ATOM_MAP"] = {"": set()}
-        return
-    # Check the input
-    gset = set()
-    divs1 = []
-    divs1x = []
-    for n, d, dx in parts:
-        gs = []
-        xg = {}
-        divs1.append(gs)
-        divs1x.append(xg)
-        for gk in d:
-            g = key2node[gk]["ID"]
-#TODO: use something more helpful than the assertion
-            assert g not in gset
-            gset.add(g)
-            # "Compound" groups are combinations of "basic" groups,
-            # as a convenience for input and display of multiple groups
-            # within a division (not supported in Waldorf365).
-            # Consider a division ["A", "BG", "R"]. There could be
-            # courses, say, for combination "A" + "BG". The "compound"
-            # group might then be "G", defined as "G=A+BG". Obviously, if
-            # this format is used, the symbols "=" and "+" should not be
-            # used in group names.
-            gs.append(g)   # A "basic" group
-        # Deal with compound groups
-        for gx in dx:
-#TODO: use something more helpful than the assertion
-            assert len(gx) > 2
-            gc = key2node[gx[0]]["ID"]
-            xgl = []
-            for gk in gx[1:]:
-                g = key2node[gk]["ID"]
-#TODO: use something more helpful than the assertion
-                assert g in gs
-                xgl.append(g)
-            xg[gc] = xgl
-#TODO: use something more helpful than the assertion
-        assert len(gs) > 1
-    # Generate "atomic" groups
-    g2ag = {}
-    aglist = []
-    for p in product(*divs1):
-        ag = AG(p)
-        aglist.append(ag)
-        for g in p:
-            try:
-                g2ag[g].add(ag)
-            except KeyError:
-                g2ag[g] = {ag}
-    for xg in divs1x:
-        for g, gl in xg.items():
-            ags = set()
-            for gg in gl:
-                ags.update(g2ag[gg])
-            g2ag[g] = ags
-    # Add the atomic groups for the whole class
-    g2ag[""] = set(aglist)
-    node["$GROUP_ATOM_MAP"] = g2ag
-
-*/
 
 func (w365data *W365Data) read_subgroups() {
 	// I don't think sorting makes much sense here.

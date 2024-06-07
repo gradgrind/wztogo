@@ -3,12 +3,9 @@ package w365
 import (
 	"fmt"
 	"testing"
-
 	// "regexp"
-
-	"gradgrind/wztogo/internal/wzbase"
-
-	"github.com/RoaringBitmap/roaring"
+	//"gradgrind/wztogo/internal/wzbase"
+	//"github.com/RoaringBitmap/roaring"
 )
 
 func TestReadW365(t *testing.T) {
@@ -34,48 +31,6 @@ func TestReadW365(t *testing.T) {
 	db.read_groups()
 	for i, n := range db.NodeList {
 		fmt.Printf("\n§node %4d: %#v\n", i, n)
-	}
-
-	cg2rbm := map[wzbase.ClassGroup]*roaring.Bitmap{}
-	var x uint32
-	type grbm struct {
-		g  int
-		bm *roaring.Bitmap
-	}
-	c2groups := map[int][]grbm{}
-	for _, i := range db.TableMap["CLASSES"] {
-		node := db.NodeList[i]
-		cdata := node.Node.(wzbase.Class)
-		fmt.Printf("\n********* %s:\n", cdata.ID)
-		glist0, cg := gen_class_groups(node.Node.(wzbase.Class).DIVISIONS)
-		g2bm := map[int]*roaring.Bitmap{}
-		for _, g := range glist0 {
-			rbm := roaring.New()
-			g2bm[g] = rbm
-			cg2rbm[wzbase.ClassGroup{CIX: i, GIX: g}] = rbm
-			c2groups[i] = append(c2groups[i], grbm{g, rbm})
-		}
-		var rbm *roaring.Bitmap
-		rbm0 := roaring.New()
-		if len(cg) == 0 {
-			x++
-			rbm0 = roaring.BitmapOf(x)
-		} else {
-			for _, glist := range cg {
-				x++
-				rbm = roaring.BitmapOf(x)
-				for _, g := range glist {
-					g2bm[g].Or(rbm)
-					rbm0.Or(rbm)
-				}
-			}
-		}
-		c2groups[i] = append(c2groups[i], grbm{0, rbm0})
-		cg2rbm[wzbase.ClassGroup{CIX: i, GIX: 0}] = rbm0
-		for _, cgr := range c2groups[i] {
-			fmt.Printf("\n +++ %d: %v", cgr.g, cgr.bm)
-		}
-
 	}
 }
 

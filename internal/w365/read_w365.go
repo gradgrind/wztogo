@@ -113,7 +113,7 @@ func (w365data *W365Data) add_node(
 	table string,
 	node interface{},
 	key string,
-) {
+) int {
 	i := len(w365data.NodeList)
 	fmt.Printf("  +++++ %4d %s: %s \n", i, table, key)
 	w365data.NodeList = append(w365data.NodeList, wzbase.WZnode{
@@ -121,6 +121,7 @@ func (w365data *W365Data) add_node(
 	})
 	w365data.NodeMap[key] = i
 	w365data.TableMap[table] = append(w365data.TableMap[table], i)
+	return i
 }
 
 // Collect the data for the selected year.
