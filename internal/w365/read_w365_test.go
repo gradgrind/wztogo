@@ -32,6 +32,8 @@ func TestReadW365(t *testing.T) {
 	for i, n := range db.NodeList {
 		fmt.Printf("\n§node %4d: %#v\n", i, n)
 	}
+	fmt.Println("  =======================================================")
+	db.read_activities()
 }
 
 func TestMisc(t *testing.T) {
