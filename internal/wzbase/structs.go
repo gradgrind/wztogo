@@ -86,6 +86,24 @@ type ClassGroup struct {
 	GIX int
 }
 
+type Course struct {
+	TEACHERS        []int
+	GROUPS          []int
+	SUBJECT         int
+	ROOM_WISH       []int
+	WORKLOAD        float64
+	WORKLOAD_FACTOR float64
+	LESSONS         []int
+	BLOCK_UNITS     float64
+	FLAGS           map[string]bool
+}
+
+type Block struct {
+	Tag        string
+	Base       int
+	Components []int
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}

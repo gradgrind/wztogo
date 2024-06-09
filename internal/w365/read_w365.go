@@ -119,7 +119,9 @@ func (w365data *W365Data) add_node(
 	w365data.NodeList = append(w365data.NodeList, wzbase.WZnode{
 		Table: table, Node: node,
 	})
-	w365data.NodeMap[key] = i
+	if key != "" {
+		w365data.NodeMap[key] = i
+	}
 	w365data.TableMap[table] = append(w365data.TableMap[table], i)
 	return i
 }

@@ -29,11 +29,11 @@ func TestReadW365(t *testing.T) {
 	fmt.Printf("\n§§categories: %#v\n", db.categorymap)
 	db.read_teachers()
 	db.read_groups()
+	fmt.Println("  =======================================================")
+	db.read_activities()
 	for i, n := range db.NodeList {
 		fmt.Printf("\n§node %4d: %#v\n", i, n)
 	}
-	fmt.Println("  =======================================================")
-	db.read_activities()
 }
 
 func TestMisc(t *testing.T) {

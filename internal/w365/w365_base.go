@@ -61,6 +61,9 @@ const w365_ForceFirstHour = "ForceFirstHour"
 const w365_Course = "Course"
 const w365_PreferredRooms = "PreferredRooms"
 const w365_HandWorkload = "HandWorkload"
+const w365_HoursPerWeek = "HoursPerWeek"
+const w365_DoubleLessonMode = "DoubleLessonMode"
+const w365_EpochWeeks = "EpochWeeks"
 
 type ItemType map[string]string
 
