@@ -64,6 +64,11 @@ const w365_HandWorkload = "HandWorkload"
 const w365_HoursPerWeek = "HoursPerWeek"
 const w365_DoubleLessonMode = "DoubleLessonMode"
 const w365_EpochWeeks = "EpochWeeks"
+const w365_Schedule = "Schedule"
+const w365_Lesson = "Lesson"
+const w365_Lessons = "Lessons"
+const w365_Fixed = "Fixed"
+const w365_LocalRooms = "LocalRooms"
 
 type ItemType map[string]string
 

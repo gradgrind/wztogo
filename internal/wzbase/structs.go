@@ -104,6 +104,13 @@ type Block struct {
 	Components []int
 }
 
+type Lesson struct {
+	Length int
+	Day    int
+	Hour   int
+	Fixed  bool
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}
