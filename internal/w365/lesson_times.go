@@ -93,9 +93,6 @@ func (w365data *W365Data) read_lesson_times() []xschedule {
 // In any case, I suppose all lessons should be read in, but only those
 // with fixed time used for input to the placement algorithm.
 
-// TODO. Amalgamate the lessons to correspond to the course requirements.
-// The lessons should be arranged as a slice to facilitate handling them
-// all as a single entity, a "plan".
 func (w365data *W365Data) read_course_lessons(
 	lessons []wzbase.Lesson, // the lessons from the chosen "schedule"
 ) map[int][]wzbase.Lesson {
@@ -107,7 +104,7 @@ func (w365data *W365Data) read_course_lessons(
 		)
 	}
 	// Order the timeslots for each course
-	for _, ll := range course_lessons {
+	for ci, ll := range course_lessons {
 		slices.SortFunc(ll, func(a, b wzbase.Lesson) int {
 			if a.Day < b.Day {
 				return -1
@@ -117,88 +114,84 @@ func (w365data *W365Data) read_course_lessons(
 			}
 			return 1
 		})
-
-		//TODO ... and amalgamate contiguous lessons – if appropriate for the
-		// course.
-
+		// Amalgamate contiguous lessons, checking against the course needs.
+		course := w365data.NodeList[ci].Node.(wzbase.Course)
+		nlist := course.LESSONS
+		// Because of the way the course lesson lengths are determined
+		// (see function "read_activities()"), all lengths are the same,
+		// except possibly the last, which can be shorter.
+		joined_lessons := []wzbase.Lesson{}
+		var day, hour int
+		var fixed bool
+		var i0 int
+		var lesson wzbase.Lesson
+		for _, n := range nlist {
+			if n == 1 {
+				// Take the first lesson.
+				if len(ll) > 0 {
+					lesson = ll[0]
+					ll = ll[1:]
+					lesson.Length = 1
+				} else {
+					// Make an unplaced lesson.
+					lesson = wzbase.Lesson{
+						Day:    -1,
+						Hour:   -1,
+						Length: 1,
+						Course: ci,
+					}
+					joined_lessons = append(joined_lessons, lesson)
+					continue
+				}
+			}
+			length := 0
+			found := false
+			for i, lesson := range ll {
+				if length > 0 {
+					if lesson.Day == day &&
+						lesson.Hour == hour+1 &&
+						lesson.Fixed == fixed {
+						//TODO: What about comparing the room lists???
+						// contiguous
+						length += 1
+						if length == n {
+							// match found
+							lesson = ll[i0]
+							lesson.Length = n
+							ll = append(ll[:i0], ll[i+1:]...)
+							joined_lessons = append(joined_lessons, lesson)
+							found = true
+							break
+						}
+						// not long enough, continue seeking
+						hour++
+						continue
+					}
+					// Otherwise start counting again.
+				}
+				day = lesson.Day
+				hour = lesson.Hour
+				fixed = lesson.Fixed
+				length = 1
+				i0 = i
+			}
+			if !found {
+				// Make an unplaced lesson.
+				lesson = wzbase.Lesson{
+					Day:    -1,
+					Hour:   -1,
+					Length: n,
+					Course: ci,
+				}
+				joined_lessons = append(joined_lessons, lesson)
+			}
+		}
+		if len(ll) != 0 {
+			//TODO: a more helpful error message
+			log.Fatalf("Lesson mismatch for course %d\n", ci)
+		}
+		course_lessons[ci] = joined_lessons
+		//fmt.Printf("\n********* %3d: %+v\n", ci, joined_lessons)
 	}
-
 	return course_lessons
 }
-
-/*
-
-
-    for lid in lesson_ids:
-        node = w365_db.idmap[lid]
-        try:
-            course_id = node[_Course]
-        except KeyError:
-#TODO
-            REPORT_WARNING("Zeiten für Epochenschienen werden nicht berücksichtigt")
-            continue
-        if node[_Fixed] == "true":
-            slot = (node[_Day], node[_Hour])
-        else:
-            slot = None
-        # Add lesson id and time slot (if fixed) to course
-        course_lessons[course_id].append((lid, slot))
-
-    # Now deal with the individual lessons
-    w365id_nodes.clear()
-    for course_id, lslots in course_lessons.items():
-        if lslots:
-            lesson_times = set()
-            for l_id, slot in lslots:
-                #print("    ", l_id, slot)
-                if slot:
-                    lesson_times.add(slot)
-            pltimes = process_lesson_times(lesson_times)
-            #print(" --c--:", pltimes)
-            k = w365_db.id2key[course_id]
-            for ll, tlist in pltimes.items():
-                for d, p in tlist:
-                    xnode =  {
-                        "LENGTH": str(ll),
-                        "_Course": k,
-                        "DAY": str(d),
-                        "PERIOD": str(p),
-                        "FIXED": "true",
-                        #"_Parallel": 0,
-                    }
-                    w365id_nodes.append(("", xnode))
-                    #print("     ++", xnode)
-    # Add to database
-    w365_db.add_nodes("LESSONS", w365id_nodes)
-#TODO: Note that if I am only including "fixed" lessons, I don't need
-# them to have a "FIXED" field!
-
-
-#TODO: Might want to record the ids of non-fixed lessons as these entries
-# might get changed? Actually, probably not, because I will probably
-# generate a new Schedule.
-
-# Do I need the EpochPlan to discover which teachers are involved in an
-# Epoch, or can I get it from the Course entries somehow? No, this is really
-# not ideal. There is a tenuous connection between "Epochenschienen" and
-# courses only when an "Epochenplan" has been generated: there are then
-# lessons which point to the course. Maybe for now I should collect the block
-# times associated with the classes (I suppose using the EpochPlan to
-# identify the classes is best? – it also supplies the name tag), then
-# go through the block courses to find those in a block (test EpochWeeks?)
-# and hence any other infos ... especially the teachers, I suppose.
-
-# Für jede Klasse, die an einer Epoche beteiligt ist, gibt es einen Satz
-# "Lessons", die identische Zeiten angeben. So entstehen viele überflüssige
-# Einträge – es wäre besser, die "Lessons" mit der Epochen zu verknüpfen,
-# einmalig.
-
-
-#TODO: Might want to represent the Epochs as single course items in fet?
-# That would be necessary if the teachers are included (but consider also
-# the possibility of being involved in other Epochen (e.g. Mittelstufe),
-# which might be different ... That's difficult to handle anyway.
-# Perhaps it's easier to put no teachers in and block the teachers
-# concerned in "Absences"?
-
-*/
