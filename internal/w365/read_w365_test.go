@@ -10,7 +10,8 @@ import (
 
 func TestReadW365(t *testing.T) {
 	fmt.Println("\n############## TestReadW365")
-	db := ReadW365Raw("../_testdata/test.w365")
+	//db := ReadW365Raw("../_testdata/test.w365")
+	db := ReadW365Raw("../_testdata/fms.w365")
 	db.ReadYear(db.ActiveYear)
 	for _, yeardata := range db.Years {
 		fmt.Printf("\n$$$ %#v\n", yeardata)
@@ -39,7 +40,11 @@ func TestReadW365(t *testing.T) {
 	for _, xn := range schedules {
 		fmt.Printf("\n == %s: %+v\n", xn.name, xn.lessons)
 	}
-
+	fmt.Printf("\n Schedule: %s\n", schedules[0].name)
+	c_l := db.read_course_lessons(schedules[0].lessons)
+	for ci, ll := range c_l {
+		fmt.Printf("\n%4d: %+v\n", ci, ll)
+	}
 }
 
 func TestMisc(t *testing.T) {

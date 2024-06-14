@@ -105,10 +105,12 @@ type Block struct {
 }
 
 type Lesson struct {
-	Length int
 	Day    int
 	Hour   int
+	Length int
+	Rooms  []int
 	Fixed  bool
+	Course int
 }
 
 type WZnode struct {

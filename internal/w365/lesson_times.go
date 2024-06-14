@@ -1,67 +1,66 @@
 package w365
 
 import (
+	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-type xlesson struct {
-	Course int
-	Day    int
-	Hour   int
-	Rooms  []int
-}
-
 type xschedule struct {
 	sortnum float64
 	name    string
-	lessons []xlesson
+	lessons []wzbase.Lesson
 }
 
-func (w365data *W365Data) read_lesson_nodes() map[string]xlesson {
-	lesson_map := map[string]xlesson{}
+func (w365data *W365Data) read_lesson_nodes() map[string]wzbase.Lesson {
+	lesson_map := map[string]wzbase.Lesson{}
 	for _, node := range w365data.yeartables[w365_Lesson] {
 		// w365 only has single slot lessons, so a local intermediate
-		// form is necessary. Only use lessons with set times.
-		if node[w365_Fixed] == "true" {
-			c := node[w365_Course]
-			if c == "" {
-				//TODO: This should be more forceful, perhaps fatal:
-				log.Printf(
-					"!!! Fixed lesson without course, Id = %s\n", node[w365_Id],
-				)
-				continue
-			}
-			d, err := strconv.Atoi(node[w365_Day])
-			if err != nil {
-				log.Fatal(err)
-			}
-			h, err := strconv.Atoi(node[w365_Hour])
-			if err != nil {
-				log.Fatal(err)
-			}
-			lnode := xlesson{Course: w365data.NodeMap[c], Day: d, Hour: h}
-			lr, ok := node[w365_LocalRooms]
-			if ok {
-				for _, r := range strings.Split(lr, LIST_SEP) {
-					lnode.Rooms = append(lnode.Rooms, w365data.NodeMap[r])
-				}
-			}
-			lesson_map[node[w365_Id]] = lnode
+		// form is necessary.
+		c := node[w365_Course]
+		if c == "" {
+			// I am currently not accepting the Waldorf 365 "Epochenschienen".
+			//TODO: This should be more forceful, perhaps fatal:
+			log.Printf(
+				"!!! Lesson without course, Id = %s\n", node[w365_Id],
+			)
+			continue
 		}
+		d, err := strconv.Atoi(node[w365_Day])
+		if err != nil {
+			log.Fatal(err)
+		}
+		h, err := strconv.Atoi(node[w365_Hour])
+		if err != nil {
+			log.Fatal(err)
+		}
+		lnode := wzbase.Lesson{
+			Day:    d,
+			Hour:   h,
+			Fixed:  node[w365_Fixed] == "true",
+			Course: w365data.NodeMap[c],
+		}
+		lr, ok := node[w365_LocalRooms]
+		if ok {
+			for _, r := range strings.Split(lr, LIST_SEP) {
+				lnode.Rooms = append(lnode.Rooms, w365data.NodeMap[r])
+			}
+		}
+		lesson_map[node[w365_Id]] = lnode
 	}
 	return lesson_map
 }
 
+// Get the existing "plans" (W365: schedule).
 func (w365data *W365Data) read_lesson_times() []xschedule {
 	lesson_map := w365data.read_lesson_nodes()
 	schedules := []xschedule{}
 	for _, node := range w365data.yeartables[w365_Schedule] {
 		//wid := node[w365_Id]
 		lidlist := node[w365_Lessons]
-		lessons := []xlesson{}
+		lessons := []wzbase.Lesson{}
 		for _, s := range strings.Split(lidlist, LIST_SEP) {
 			l, ok := lesson_map[s]
 			if ok {
@@ -86,33 +85,49 @@ func (w365data *W365Data) read_lesson_times() []xschedule {
 	return schedules
 }
 
+// My current preference is to ignore the W365 Epochen, using tagged
+// "normal" courses instead.
+
+//TODO: Need to specify which "Schedule" to use.
+// I could consider using the one called "Vorlage" for the moment?
+// In any case, I suppose all lessons should be read in, but only those
+// with fixed time used for input to the placement algorithm.
+
+// TODO. Amalgamate the lessons to correspond to the course requirements.
+// The lessons should be arranged as a slice to facilitate handling them
+// all as a single entity, a "plan".
+func (w365data *W365Data) read_course_lessons(
+	lessons []wzbase.Lesson, // the lessons from the chosen "schedule"
+) map[int][]wzbase.Lesson {
+	// Allocate the lessons in the "schedule" to their courses.
+	course_lessons := map[int][]wzbase.Lesson{}
+	for _, lesson := range lessons {
+		course_lessons[lesson.Course] = append(
+			course_lessons[lesson.Course], lesson,
+		)
+	}
+	// Order the timeslots for each course
+	for _, ll := range course_lessons {
+		slices.SortFunc(ll, func(a, b wzbase.Lesson) int {
+			if a.Day < b.Day {
+				return -1
+			}
+			if a.Day == b.Day && a.Hour < b.Hour {
+				return -1
+			}
+			return 1
+		})
+
+		//TODO ... and amalgamate contiguous lessons – if appropriate for the
+		// course.
+
+	}
+
+	return course_lessons
+}
+
 /*
-#TODO: Need to specify which "Schedule" to use
-    schedules = [
-        (float(node[_ListPosition]), node[_Name], node[_Lessons])
-        for node in w365_db.scenario[_Schedule]
-    ]
-    schedules.sort()
-    #for _, n, _ in schedules:
-    #    print(" +++", n)
 
-# The "Vorlage" might have only fixed lessons.
-# If adding or deleting lessons, the Lessons field of the Schedule
-# must be updated, or a new Schedule must be built (maybe better).
-
-#TODO: Assume the last schedule?
-    isched = -1
-# or the first?
-    isched = 0
-    lesson_ids = schedules[isched][-1].split(LIST_SEP)
-    lesson_set = set(lesson_ids)
-# (or maybe rather one with a particular name?)
-
-#TODO?
-#    w365_db.w365lessons = lesson_ids
-
-# My current preference is to ignore the W365 Epochen, using tagged
-# "normal" courses instead.
 
     for lid in lesson_ids:
         node = w365_db.idmap[lid]
