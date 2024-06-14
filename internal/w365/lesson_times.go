@@ -95,7 +95,7 @@ func (w365data *W365Data) read_lesson_times() []xschedule {
 
 func (w365data *W365Data) read_course_lessons(
 	lessons []wzbase.Lesson, // the lessons from the chosen "schedule"
-) map[int][]wzbase.Lesson {
+) []wzbase.Lesson {
 	// Allocate the lessons in the "schedule" to their courses.
 	course_lessons := map[int][]wzbase.Lesson{}
 	for _, lesson := range lessons {
@@ -103,24 +103,28 @@ func (w365data *W365Data) read_course_lessons(
 			course_lessons[lesson.Course], lesson,
 		)
 	}
-	// Order the timeslots for each course
-	for ci, ll := range course_lessons {
-		slices.SortFunc(ll, func(a, b wzbase.Lesson) int {
-			if a.Day < b.Day {
-				return -1
-			}
-			if a.Day == b.Day && a.Hour < b.Hour {
-				return -1
-			}
-			return 1
-		})
+	// Allocate the timeslots for each course.
+	joined_lessons := []wzbase.Lesson{}
+	for _, ci := range w365data.TableMap["COURSES"] {
+		ll, ok := course_lessons[ci]
+		if ok {
+			// Order the lessons chronologically.
+			slices.SortFunc(ll, func(a, b wzbase.Lesson) int {
+				if a.Day < b.Day {
+					return -1
+				}
+				if a.Day == b.Day && a.Hour < b.Hour {
+					return -1
+				}
+				return 1
+			})
+		} // otherwise the list "ll" is empty (length == 0).
 		// Amalgamate contiguous lessons, checking against the course needs.
 		course := w365data.NodeList[ci].Node.(wzbase.Course)
 		nlist := course.LESSONS
 		// Because of the way the course lesson lengths are determined
 		// (see function "read_activities()"), all lengths are the same,
 		// except possibly the last, which can be shorter.
-		joined_lessons := []wzbase.Lesson{}
 		var day, hour int
 		var fixed bool
 		var i0 int
@@ -188,10 +192,8 @@ func (w365data *W365Data) read_course_lessons(
 		}
 		if len(ll) != 0 {
 			//TODO: a more helpful error message
-			log.Fatalf("Lesson mismatch for course %d\n", ci)
+			log.Fatalf("Lesson mismatch for course %d: %+v\n", ci, course)
 		}
-		course_lessons[ci] = joined_lessons
-		//fmt.Printf("\n********* %3d: %+v\n", ci, joined_lessons)
 	}
-	return course_lessons
+	return joined_lessons
 }
