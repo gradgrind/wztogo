@@ -123,3 +123,10 @@ type WZDB struct { // for the NODES table in th sqlite database
 	DB_TABLE string // table name
 	DATA     string // JSON
 }
+
+type WZdata struct {
+	Schooldata map[string]string
+	NodeList   []WZnode
+	TableMap   map[string][]int
+	Config     map[string]interface{}
+}

@@ -5,6 +5,8 @@ package w365
 import (
 	"bufio"
 	"cmp"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
@@ -12,6 +14,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Read a Waldorf 365 data file and divide it into "items" (individual
@@ -115,7 +119,7 @@ func (w365data *W365Data) add_node(
 	key string,
 ) int {
 	i := len(w365data.NodeList)
-	fmt.Printf("  +++++ %4d %s: %s \n", i, table, key)
+	//fmt.Printf("  +++++ %4d %s: %s \n", i, table, key)
 	w365data.NodeList = append(w365data.NodeList, wzbase.WZnode{
 		Table: table, Node: node,
 	})
@@ -139,18 +143,6 @@ func (w365data *W365Data) ReadYear(year string) {
 	w365data.Config = map[string]interface{}{}
 	w365data.absencemap = map[string]wzbase.Timeslot{}
 	w365data.categorymap = map[string]Category{}
-
-	/* TESTING
-	w365data.add_node("TEST1", 100, "$1")
-	w365data.add_node("TEST1", map[string]string{"VAL1": "V1"}, "$2")
-	w365data.add_node("TEST2", map[string]int{"VAL2": 2}, "$3")
-	fmt.Printf("\n &&&&&1 %#v\n", w365data.NodeList)
-	fmt.Printf("\n &&&&&2 %#v\n", w365data.NodeMap)
-	fmt.Printf("\n &&&&&3 %#v\n", w365data.TableMap)
-	nt0_ := w365data.NodeList[w365data.NodeMap["$2"]]
-	fmt.Printf("\n &&&&&4 %#v\n", nt0_.Node.(map[string]string)["VAL1"])
-	*/
-
 	containerId := w365data.Years[year].W365Id
 	yeartables := map[string][]ItemType{}
 	// Filter the items, retain only those for the chosen year.
@@ -196,4 +188,86 @@ func convert_colour(colour string) string {
 		log.Fatal(err)
 	}
 	return fmt.Sprintf("#%06X", 0x1000000+i)
+}
+
+// ************ Tying it together ************
+
+// Read the data from the given file for the "active" year.
+func ReadW365(w365file string) wzbase.WZdata {
+	db365 := ReadW365Raw(w365file)
+	//TODO: Might one want to select a different year?
+	db365.ReadYear(db365.ActiveYear)
+	db365.read_days()
+	db365.read_hours()
+	db365.read_subjects()
+	db365.read_rooms()
+	db365.read_absences()
+	db365.read_categories()
+	db365.read_teachers()
+	db365.read_groups()
+	db365.read_activities()
+	schedules := db365.read_lesson_times()
+	//TODO: I might want to select the schedule ...
+	// Here just the first one is chosen.
+	plan_name := schedules[0].name
+	c_l := db365.read_course_lessons(schedules[0].lessons)
+	// At least the initialized activities should be added to the
+	// database. Here all activities (including uninitialized ones) are
+	// added as a "lesson plan", named as the w365 schedule.
+	entry := struct {
+		ID      string
+		LESSONS []wzbase.Lesson
+	}{plan_name, c_l}
+	db365.add_node("LESSON_PLANS", entry, "")
+	// Save data to (new) sqlite file
+	dbfile := "../_testdata/db365.sqlite"
+	os.Remove(dbfile)
+	dbx, err := sql.Open("sqlite3", dbfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dbx.Close()
+	query := `
+CREATE TABLE IF NOT EXISTS NODES(
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	DB_TABLE TEXT NOT NULL,
+	DATA TEXT NOT NULL
+);
+`
+	_, err = dbx.Exec(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	query = "INSERT INTO NODES(DB_TABLE, DATA) values(?,?)"
+	tx, err := dbx.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// The primary key will correspond to the node indexes.
+	for _, wznode := range db365.NodeList[1:] {
+		j, err := json.Marshal(wznode.Node)
+		if err != nil {
+			tx.Rollback()
+			log.Fatal(err)
+		}
+		_, err = tx.Exec(query, wznode.Table, string(j))
+		if err != nil {
+			tx.Rollback()
+			log.Fatal(err)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Produce a wzbase WZDB (?) as result
+	sdata := db365.Schooldata
+	sdata["YEAR"] = db365.ActiveYear
+	return wzbase.WZdata{
+		Schooldata: sdata,
+		NodeList:   db365.NodeList,
+		TableMap:   db365.TableMap,
+		Config:     db365.Config,
+	}
+
 }
