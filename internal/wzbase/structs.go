@@ -117,3 +117,9 @@ type WZnode struct {
 	Table string
 	Node  interface{}
 }
+
+type WZDB struct { // for the NODES table in th sqlite database
+	Id       int    // primary key
+	DB_TABLE string // table name
+	DATA     string // JSON
+}

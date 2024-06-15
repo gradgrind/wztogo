@@ -1,11 +1,19 @@
 package w365
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
+	"gradgrind/wztogo/internal/wzbase"
+	"log"
+	"os"
 	"testing"
+
 	// "regexp"
 	//"gradgrind/wztogo/internal/wzbase"
 	//"github.com/RoaringBitmap/roaring"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestReadW365(t *testing.T) {
@@ -40,13 +48,76 @@ func TestReadW365(t *testing.T) {
 	for _, xn := range schedules {
 		fmt.Printf("\n == %s: %+v\n", xn.name, xn.lessons)
 	}
-	fmt.Printf("\n Schedule: %s\n", schedules[0].name)
+	plan_name := schedules[0].name
+	fmt.Printf("\n Schedule: %s\n", plan_name)
 	c_l := db.read_course_lessons(schedules[0].lessons)
 	for ci, ll := range c_l {
 		fmt.Printf("\n%4d: %+v\n", ci, ll)
 	}
+	// At least the initialized activities should be added to the
+	// database. Here all activities (including uninitialized ones) are
+	// added as a "lesson plan", named as the w365 schedule.
+	entry := struct {
+		ID      string
+		LESSONS []wzbase.Lesson
+	}{plan_name, c_l}
+	db.add_node("LESSON_PLANS", entry, "")
+	// Save data to (new) sqlite file
+	dbfile := "../_testdata/db365.sqlite"
+	os.Remove(dbfile)
+	dbx, err := sql.Open("sqlite3", dbfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dbx.Close()
+
+	var version string
+	err = dbx.QueryRow("SELECT SQLITE_VERSION()").Scan(&version)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println()
+	fmt.Println(version)
+	query := `
+    CREATE TABLE IF NOT EXISTS NODES(
+        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        DB_TABLE TEXT NOT NULL,
+        DATA TEXT NOT NULL
+    );
+    `
+	_, err = dbx.Exec(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("\n  *** Tables ***")
+	query = "INSERT INTO NODES(DB_TABLE, DATA) values(?,?)"
+	tx, err := dbx.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// The primary key will correspond to the node indexes.
+	for _, wznode := range db.NodeList[1:] {
+		j, err := json.Marshal(wznode.Node)
+		if err != nil {
+			tx.Rollback()
+			log.Fatal(err)
+		}
+		_, err = tx.Exec(query, wznode.Table, string(j))
+		if err != nil {
+			tx.Rollback()
+			log.Fatal(err)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
+/*
 func TestMisc(t *testing.T) {
 	fmt.Println("\n############## TestMisc")
 	fmt.Println(convert_date("24. 12. 2023"))
@@ -111,3 +182,4 @@ func TestMisc(t *testing.T) {
 	il["A2"] = append(il["A2"], 3)
 	fmt.Printf("\n il: %+v\n", il)
 }
+*/

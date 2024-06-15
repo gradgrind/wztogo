@@ -131,6 +131,8 @@ func (w365data *W365Data) ReadYear(year string) {
 	// For the first call it is not necessary to (re)initialize the slice,
 	// but if the structure is reused, it needs to be cleared.
 	w365data.NodeList = []wzbase.WZnode{}
+	// Add a dummy entry at index 0.
+	w365data.NodeList = append(w365data.NodeList, wzbase.WZnode{})
 	// Maps must be initialized anyway.
 	w365data.NodeMap = map[string]int{}
 	w365data.TableMap = map[string][]int{}

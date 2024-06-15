@@ -42,11 +42,11 @@ func (w365data *W365Data) read_categories() {
 		// TODO: Where multiple categories are used is it right to assume or
 		// assert that only one will have a WorkloadFactor other than "1.0"?
 		sc := node["Shortcut"]
-		wid := node[w365_Id]
+		//wid := node[w365_Id]
 		block := ""
 		if strings.HasPrefix(sc, "_") {
 			// only relevant for courses
-			block = wid
+			block = sc
 		}
 		maxLunchDays := -1
 		_, n, ok := strings.Cut(sc, "*") // only relevant for teachers

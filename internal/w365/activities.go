@@ -9,7 +9,7 @@ import (
 
 func (w365data *W365Data) read_activities() {
 	type xblock struct {
-		// * The values are w365 Ids of the courses
+		// * The values below are w365 Ids of the courses
 		base       string
 		components []string
 	}
@@ -104,7 +104,6 @@ func (w365data *W365Data) read_activities() {
 		//fmt.Printf("    --> Lessons: %+v\n", lessons)
 		// * Get additional info from the "categories"
 		cat := w365data.categories(node)
-
 		block_units := 0.0
 		epweeks := node[w365_EpochWeeks]
 		if epweeks != "0.0" {
