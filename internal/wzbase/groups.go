@@ -1,8 +1,6 @@
 package wzbase
 
 import (
-	"fmt"
-
 	"github.com/RoaringBitmap/roaring"
 )
 
@@ -30,7 +28,7 @@ func (ag *AtomicGroups) Add_class_groups(cix int, cdata Class) {
 	}
 	c2groups := map[int][]grbm{}
 
-	fmt.Printf("\n********* %s:\n", cdata.ID)
+	//fmt.Printf("\n********* %s:\n", cdata.ID)
 	glist0, cg := gen_class_groups(cdata.DIVISIONS)
 	g2bm := map[int]*roaring.Bitmap{}
 	for _, g := range glist0 {
@@ -56,9 +54,9 @@ func (ag *AtomicGroups) Add_class_groups(cix int, cdata Class) {
 	}
 	c2groups[cix] = append(c2groups[cix], grbm{0, rbm0})
 	cg2rbm[ClassGroup{CIX: cix, GIX: 0}] = rbm0
-	for _, cgr := range c2groups[cix] {
-		fmt.Printf("\n +++ %d: %v", cgr.g, cgr.bm)
-	}
+	//for _, cgr := range c2groups[cix] {
+	//	fmt.Printf("\n +++ %d: %v", cgr.g, cgr.bm)
+	//}
 }
 
 func gen_class_groups(class_divisions []DivGroups) ([]int, [][]int) {
@@ -85,7 +83,7 @@ func gen_class_groups(class_divisions []DivGroups) ([]int, [][]int) {
 			lists = lists2
 		}
 	}
-	fmt.Printf("** gen_class_groups: %+v\n  %+v\n", glist0, lists)
+	//fmt.Printf("** gen_class_groups: %+v\n  %+v\n", glist0, lists)
 	return glist0, lists
 }
 

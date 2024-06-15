@@ -33,18 +33,6 @@ func (w365data *W365Data) read_activities() {
 				slist = append(slist, w365data.NodeMap[s])
 			}
 		}
-		if len(slist) != 1 {
-			snlist := []string{}
-			for _, i := range slist {
-				snlist = append(
-					snlist, w365data.NodeList[i].Node.(wzbase.Subject).ID,
-				)
-			}
-			stlist := strings.Join(snlist, ",")
-			log.Printf("\n????????????????\n  INVALID SUBJECT in Course %s: "+
-				"%+v\n????????????????\n", wid, stlist)
-			continue
-		}
 		subject := slist[0]
 		//fmt.Printf("    --> Subject: %d\n", subject)
 		// * Get groups
@@ -53,6 +41,28 @@ func (w365data *W365Data) read_activities() {
 			if s != "" {
 				glist = append(glist, w365data.NodeMap[s])
 			}
+		}
+		if len(slist) != 1 {
+			snlist := []string{}
+			for _, i := range slist {
+				snlist = append(
+					snlist, w365data.NodeList[i].Node.(wzbase.Subject).ID,
+				)
+			}
+			stlist := strings.Join(snlist, ",")
+			gnlist := []string{}
+			for _, i := range glist {
+				gnlist = append(
+					gnlist, w365data.NodeList[i].Node.(wzbase.Class).ID,
+				)
+			}
+			gtlist := strings.Join(gnlist, ",")
+			log.Printf("\n=========================================\n"+
+				"  !!!  INVALID SUBJECT (%s) in Class(es) %s\n"+
+				"=========================================\n",
+				stlist, gtlist,
+			)
+			continue
 		}
 		//fmt.Printf("    --> Groups: %+v\n", glist)
 		// * Get rooms
@@ -108,11 +118,18 @@ func (w365data *W365Data) read_activities() {
 		epweeks := node[w365_EpochWeeks]
 		if epweeks != "0.0" {
 			if cat.Block == "" {
-				//TODO: This could easily occur, so a more helpful error
-				// message is needed to aid in tracing the problem.
-				//log.Fatalf(
-				log.Printf(
-					"EpochWeeks without block tag: course Id = %s\n", wid,
+				sbj := w365data.NodeList[slist[0]].Node.(wzbase.Subject).ID
+				gnlist := []string{}
+				for _, i := range glist {
+					gnlist = append(
+						gnlist, w365data.NodeList[i].Node.(wzbase.Class).ID,
+					)
+				}
+				gtlist := strings.Join(gnlist, ",")
+				log.Printf("\n=========================================\n"+
+					"  !!!  EpochWeeks without block tag (%s) in Class(es) %s\n"+
+					"=========================================\n",
+					sbj, gtlist,
 				)
 			}
 			block_units, err = strconv.ParseFloat(epweeks, 32)
