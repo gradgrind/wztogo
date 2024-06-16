@@ -290,10 +290,11 @@ CREATE TABLE IF NOT EXISTS NODES(
 		sdata[k] = v
 	}
 	return wzbase.WZdata{
-		Schooldata: sdata,
-		NodeList:   db365.NodeList,
-		IndexMap:   imap,
-		TableMap:   db365.TableMap,
+		Schooldata:   sdata,
+		NodeList:     db365.NodeList,
+		IndexMap:     imap,
+		TableMap:     db365.TableMap,
+		AtomicGroups: db365.AtomicGroups,
 	}
 
 }

@@ -78,15 +78,16 @@ const w365_LocalRooms = "LocalRooms"
 type ItemType map[string]string
 
 type W365Data struct {
-	Schooldata ItemType
-	Years      map[string]YearData
-	ActiveYear string
-	Yeardata   map[string]interface{}
-	NodeList   []wzbase.WZnode
-	NodeMap    map[string]int
-	TableMap   map[string][]int
-	Config     map[string]interface{}
-
+	Schooldata   ItemType
+	Years        map[string]YearData
+	ActiveYear   string
+	Yeardata     map[string]interface{}
+	NodeList     []wzbase.WZnode
+	NodeMap      map[string]int
+	TableMap     map[string][]int
+	Config       map[string]interface{}
+	AtomicGroups wzbase.AtomicGroups
+	// These are only used temporarily:
 	tables0     map[string][]ItemType
 	yeartables  map[string][]ItemType
 	absencemap  map[string]wzbase.Timeslot

@@ -4,15 +4,24 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
+// AtomicGroups uses "roaring bitmaps" to represent the atomic groups of
+// the classes and their groups. To the outside this uses simple consecutive
+// integers to represent the atomic groups, but allows set operations on the
+// collections of atomic groups associated with the classes and groups.
 type AtomicGroups struct {
-	x             uint32
-	Class_Groups  map[int][]ClassGroup
+	// X counts the atomic groups. The first one has value 1. When all have
+	// been read, X has the value of the last one, i.e. the total count.
+	X uint32
+	//TODO: Class_Groups maps a class reference to a list of its ClassGroup
+	// elements.
+	Class_Groups map[int][]ClassGroup
+	// Group_Atomics maps a ClassGroup to its atomic groups.
 	Group_Atomics map[ClassGroup]*roaring.Bitmap
 }
 
 func NewAtomicGroups() AtomicGroups {
 	return AtomicGroups{
-		x:             0,
+		X:             0,
 		Class_Groups:  map[int][]ClassGroup{},
 		Group_Atomics: map[ClassGroup]*roaring.Bitmap{},
 	}
@@ -21,38 +30,41 @@ func NewAtomicGroups() AtomicGroups {
 func (ag *AtomicGroups) Add_class_groups(cix int, cdata Class) {
 
 	cg2rbm := ag.Group_Atomics
-	//?
-	type grbm struct {
-		g  int
-		bm *roaring.Bitmap
-	}
-	c2groups := map[int][]grbm{}
-
+	c2cg := ag.Class_Groups
+	/*
+		type grbm struct {
+			g  int
+			bm *roaring.Bitmap
+		}
+		c2groups := map[int][]grbm{}
+	*/
 	//fmt.Printf("\n********* %s:\n", cdata.ID)
 	glist0, cg := gen_class_groups(cdata.DIVISIONS)
 	g2bm := map[int]*roaring.Bitmap{}
 	for _, g := range glist0 {
 		rbm := roaring.New()
 		g2bm[g] = rbm
-		cg2rbm[ClassGroup{CIX: cix, GIX: g}] = rbm
-		c2groups[cix] = append(c2groups[cix], grbm{g, rbm})
+		c_g := ClassGroup{CIX: cix, GIX: g}
+		cg2rbm[c_g] = rbm
+		c2cg[cix] = append(c2cg[cix], c_g)
+		//c2groups[cix] = append(c2groups[cix], grbm{g, rbm})
 	}
 	var rbm *roaring.Bitmap
 	rbm0 := roaring.New()
 	if len(cg) == 0 {
-		ag.x++
-		rbm0 = roaring.BitmapOf(ag.x)
+		ag.X++
+		rbm0 = roaring.BitmapOf(ag.X)
 	} else {
 		for _, glist := range cg {
-			ag.x++
-			rbm = roaring.BitmapOf(ag.x)
+			ag.X++
+			rbm = roaring.BitmapOf(ag.X)
 			for _, g := range glist {
 				g2bm[g].Or(rbm)
 				rbm0.Or(rbm)
 			}
 		}
 	}
-	c2groups[cix] = append(c2groups[cix], grbm{0, rbm0})
+	//c2groups[cix] = append(c2groups[cix], grbm{0, rbm0})
 	cg2rbm[ClassGroup{CIX: cix, GIX: 0}] = rbm0
 	//for _, cgr := range c2groups[cix] {
 	//	fmt.Printf("\n +++ %d: %v", cgr.g, cgr.bm)

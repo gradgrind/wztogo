@@ -117,39 +117,30 @@ func (w365data *W365Data) read_groups() {
 		i := w365data.add_node("CLASSES", xc.node, xc.wid)
 		ag.Add_class_groups(i, xc.node)
 	}
-	//TODO: Add the atomic group data to the general data structures.
-	// Which form should I use? Probably cg2rbm.
-	// Then I can comment out c2groups.
-	// On the other hand I should separate out the class-handling bit
-	// so that a class can be changed individually (when editing).
-	// And it can be moved out of the w365 specific bit?
-	// Because of the serial indexing it might be better to redo the
-	// atomic groups completely when there is a change to class groups?
+	/*
+		fmt.Println("\n  ****************************************")
+		fmt.Printf(" Number of atomic groups: %d\n", ag.X)
+		fmt.Printf(" ClassGroups: %+v\n", ag.Class_Groups)
+		fmt.Printf(" 12K: %+v //// 13: %+v\n",
+			ag.Class_Groups[251], ag.Class_Groups[252],
+		)
+		fmt.Println("  ++++++++++++++++++++++++++++++++++++++++++")
+		fmt.Printf(" For class 13: %+v\n", ag.Group_Atomics[wzbase.ClassGroup{
+			CIX: 252, GIX: 0,
+		}])
+		fmt.Println("  ****************************************")
+	*/
+	// Add the atomic groups to the general data structures.
+	w365data.AtomicGroups = ag
+
+	// Because of the serial indexing for the atomic groups and the
+	// references in their structures it is probably necessary to regenerate
+	// the atomic groups completely when there is a change to class groups.
 	// How are group changes handled as far as courses, etc., are
 	// concerned? Surely if a group is removed, any associated courses
 	// must also be removed (prompt!), mustn't they?
 
 	//TODO: Compound groups ...
-
-	//TODO:
-	/*
-	   constraints = {
-	       _f: node[f]
-	       for f, _f in (
-	           (_ForceFirstHour, "ForceFirstHour"),
-	           (_MaxLessonsPerDay, "MaxLessonsPerDay"),
-	           (_MinLessonsPerDay, "MinLessonsPerDay"),
-	           (_NumberOfAfterNoonDays, "NumberOfAfterNoonDays"),
-	       )
-	   }
-	   xnode["CONSTRAINTS"] = constraints
-	   a = absences(w365_db.idmap, node)
-	   if a:
-	       xnode["NOT_AVAILABLE"] = a
-	   c = categories(w365_db.idmap, node)
-	   if c:
-	       xnode["EXTRA"] = c
-	*/
 }
 
 func (w365data *W365Data) read_subgroups() {
