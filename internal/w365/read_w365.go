@@ -59,11 +59,11 @@ func ReadW365Raw(fpath string) W365Data {
 			}
 			line = strings.TrimLeft(line, "*")
 			item = make(ItemType)
-			if line == "Scenario" {
+			if line == w365_Scenario {
 				scenarios = append(scenarios, item)
 				continue
 			}
-			if line == "SchoolState" {
+			if line == w365_SchoolState {
 				schoolstate = item
 				continue
 			}
@@ -83,10 +83,10 @@ func ReadW365Raw(fpath string) W365Data {
 		log.Fatal(err)
 	}
 	scenario_map := map[string]YearData{}
-	aid := schoolstate["ActiveScenario"]
+	aid := schoolstate[w365_ActiveScenario]
 	ayear := ""
 	for _, item := range scenarios {
-		fp, err := strconv.ParseFloat(item["EpochFactor"], 64)
+		fp, err := strconv.ParseFloat(item[w365_EpochFactor], 64)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -97,16 +97,20 @@ func ReadW365Raw(fpath string) W365Data {
 		}
 		scenario_map[tag] = YearData{
 			Tag:         tag,
-			Name:        item["Decription"],
-			DATE_Start:  convert_date(item["Start"]),
-			DATE_End:    convert_date(item["End"]),
+			Name:        item[w365_Description],
+			DATE_Start:  convert_date(item[w365_Start]),
+			DATE_End:    convert_date(item[w365_End]),
 			EpochFactor: fp,
 			W365Id:      yid,
-			LastChanged: item["LastChanged"],
+			LastChanged: item[w365_LastChanged],
 		}
 	}
 	return W365Data{
-		Schooldata: schoolstate, //TODO: filter
+		Schooldata: ItemType{
+			"CountryCode": schoolstate["CountryCode"],
+			"SchoolName":  schoolstate["SchoolName"],
+			"StateCode":   schoolstate["StateCode"],
+		},
 		Years:      scenario_map,
 		ActiveYear: ayear,
 		tables0:    tables,
@@ -143,7 +147,8 @@ func (w365data *W365Data) ReadYear(year string) {
 	w365data.Config = map[string]interface{}{}
 	w365data.absencemap = map[string]wzbase.Timeslot{}
 	w365data.categorymap = map[string]Category{}
-	containerId := w365data.Years[year].W365Id
+	year_data := w365data.Years[year]
+	containerId := year_data.W365Id
 	yeartables := map[string][]ItemType{}
 	// Filter the items, retain only those for the chosen year.
 	for tbl, itemlist := range w365data.tables0 {
@@ -168,6 +173,14 @@ func (w365data *W365Data) ReadYear(year string) {
 		yeartables[tbl] = newlist
 	}
 	w365data.yeartables = yeartables
+	w365data.Yeardata = map[string]interface{}{
+		"YEAR":        year_data.Tag,
+		"SCHOOLYEAR":  year_data.Name,
+		"DATE_Start":  year_data.DATE_Start,
+		"DATE_End":    year_data.DATE_End,
+		"EpochFactor": year_data.EpochFactor,
+		"LastChanged": year_data.LastChanged,
+	}
 }
 
 // Convert an input date. In the Waldorf365 data dumps, "DateOfBirth" fields
@@ -260,14 +273,26 @@ CREATE TABLE IF NOT EXISTS NODES(
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Produce a wzbase WZDB (?) as result
-	sdata := db365.Schooldata
-	sdata["YEAR"] = db365.ActiveYear
+	// The index map is in this case an identity mapping ...
+	imap := make(map[int]int, len(db365.NodeList))
+	for i := range db365.NodeList {
+		imap[i] = i
+	}
+	sdata := map[string]interface{}{}
+	for k, v := range db365.Schooldata {
+		sdata[k] = v
+	}
+	for k, v := range db365.Yeardata {
+		sdata[k] = v
+	}
+	for k, v := range db365.Config {
+		sdata[k] = v
+	}
 	return wzbase.WZdata{
 		Schooldata: sdata,
 		NodeList:   db365.NodeList,
+		IndexMap:   imap,
 		TableMap:   db365.TableMap,
-		Config:     db365.Config,
 	}
 
 }

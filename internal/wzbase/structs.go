@@ -118,15 +118,26 @@ type WZnode struct {
 	Node  interface{}
 }
 
-type WZDB struct { // for the NODES table in th sqlite database
+type WZDB struct { // for the NODES table in the sqlite database
 	Id       int    // primary key
 	DB_TABLE string // table name
 	DATA     string // JSON
 }
 
+// WZdata represents all the data within the sqlite table "NODES".
+// The nodes / db-rows may contain references to other nodes. These
+// references are integers (> 0) and are the primary keys of the
+// referenced nodes in the database.
+// When the database is loaded into memory to produce this structure,
+// the contiguous NodeList is produced. IndexMap is built to map
+// the node references (primary keys) to the corresponding indexes in
+// the NodeList.
+// TableMap collects the node references (primary keys) of the entries
+// of each "table" ("DB_TABLE" field, not a table within the sqlite
+// database).
 type WZdata struct {
-	Schooldata map[string]string
-	NodeList   []WZnode
-	TableMap   map[string][]int
-	Config     map[string]interface{}
+	Schooldata map[string]interface{}
+	NodeList   []WZnode         // all the db rows
+	IndexMap   map[int]int      // map reference to NodeList index
+	TableMap   map[string][]int // map table name to list of references
 }

@@ -7,6 +7,12 @@ const LIST_SEP = "#" // In the XML dumps it is ","
 const w365_Id = "Id"
 const w365_ContainerId = "ContainerId"
 const w365_ListPosition = "ListPosition"
+const w365_Scenario = "Scenario"
+const w365_SchoolState = "SchoolState"
+const w365_ActiveScenario = "ActiveScenario"
+const w365_EpochFactor = "EpochFactor"
+const w365_Description = "Decription" // sic!
+const w365_LastChanged = "LastChanged"
 const w365_Teacher = "Teacher"
 const w365_Teachers = "Teachers"
 const w365_Shortcut = "Shortcut"
@@ -56,7 +62,6 @@ const w365_YearDiv = "GradePartiton" // sic
 const w365_YearDivs = "GradePartitions"
 const w365_Level = "Level"
 const w365_Letter = "Letter"
-const w365_EpochFactor = "EpochFactor"
 const w365_ForceFirstHour = "ForceFirstHour"
 const w365_Course = "Course"
 const w365_PreferredRooms = "PreferredRooms"
@@ -76,6 +81,7 @@ type W365Data struct {
 	Schooldata ItemType
 	Years      map[string]YearData
 	ActiveYear string
+	Yeardata   map[string]interface{}
 	NodeList   []wzbase.WZnode
 	NodeMap    map[string]int
 	TableMap   map[string][]int
