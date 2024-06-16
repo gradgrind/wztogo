@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 	for i := range db365.NodeList {
 		imap[i] = i
 	}
+	// Combine the various bits of school & configuration data.
 	sdata := map[string]interface{}{}
 	for k, v := range db365.Schooldata {
 		sdata[k] = v
