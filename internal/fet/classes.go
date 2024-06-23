@@ -2,6 +2,7 @@ package fet
 
 import (
 	"encoding/xml"
+	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
 )
 
@@ -222,16 +223,28 @@ type fetStudentsList struct {
 }
 
 // TODO: Handle the groups ...
+// Note that there may well be "superfluous" divisions – ones with no
+// actual lessons associated. These should be stripped out for fet!
+// That might be an argument for not generating the atomic groups until
+// it is clear in which form they are needed.
 func getClasses(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
 	for _, ti := range trefs {
 		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
+		divs := cl.DIVISIONS
+		nc := 0
+		if len(divs) > 0 {
+			nc = 1
+
+		}
 		items = append(items, fetClass{
 			Name:                 cl.SORTING, //?
 			Comments:             cl.ID,      //?
-			Number_of_Categories: 0,
+			Number_of_Categories: nc,
+			Separator:            ".",
 		})
+		fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 	}
 	data := fetStudentsList{
 		Year: items,

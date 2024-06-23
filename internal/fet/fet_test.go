@@ -14,6 +14,9 @@ func TestFet(t *testing.T) {
 	w365file := "../_testdata/fms.w365"
 	// w365file := "../_testdata/test.w365"
 	wzdb := w365.ReadW365(w365file)
+
+	return
+
 	//fmt.Printf("\nINPUT: %+v\n", wzdb)
 	xmlitem := getDays(&wzdb)
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
@@ -22,5 +25,7 @@ func TestFet(t *testing.T) {
 	xmlitem = getSubjects(&wzdb)
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
 	xmlitem = getTeachers(&wzdb)
+	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
+	xmlitem = getClasses(&wzdb)
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
 }

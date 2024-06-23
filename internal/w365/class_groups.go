@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"gradgrind/wztogo/internal/wzbase"
-	// mapset "github.com/deckarep/golang-set/v2"
 )
 
 // Manage the reading of classes and the associated students, groups
@@ -111,34 +110,10 @@ func (w365data *W365Data) read_groups() {
 		}
 		return 1
 	})
-	// Add each class to the data structures and build atomic groups
-	ag := wzbase.NewAtomicGroups()
+	// Add each class to the data structures
 	for _, xc := range xclasses {
-		i := w365data.add_node("CLASSES", xc.node, xc.wid)
-		ag.Add_class_groups(i, xc.node)
+		w365data.add_node("CLASSES", xc.node, xc.wid)
 	}
-	/*
-		fmt.Println("\n  ****************************************")
-		fmt.Printf(" Number of atomic groups: %d\n", ag.X)
-		fmt.Printf(" ClassGroups: %+v\n", ag.Class_Groups)
-		fmt.Printf(" 12K: %+v //// 13: %+v\n",
-			ag.Class_Groups[251], ag.Class_Groups[252],
-		)
-		fmt.Println("  ++++++++++++++++++++++++++++++++++++++++++")
-		fmt.Printf(" For class 13: %+v\n", ag.Group_Atomics[wzbase.ClassGroup{
-			CIX: 252, GIX: 0,
-		}])
-		fmt.Println("  ****************************************")
-	*/
-	// Add the atomic groups to the general data structures.
-	w365data.AtomicGroups = ag
-
-	// Because of the serial indexing for the atomic groups and the
-	// references in their structures it is probably necessary to regenerate
-	// the atomic groups completely when there is a change to class groups.
-	// How are group changes handled as far as courses, etc., are
-	// concerned? Surely if a group is removed, any associated courses
-	// must also be removed (prompt!), mustn't they?
 
 	//TODO: Compound groups ...
 }

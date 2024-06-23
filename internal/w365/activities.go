@@ -15,6 +15,7 @@ func (w365data *W365Data) read_activities() {
 	}
 
 	blocks := map[string]*xblock{}
+	active_groups := map[int]bool{}
 	for _, node := range w365data.yeartables[w365_Course] {
 		wid := node[w365_Id]
 		// * Get teachers
@@ -190,7 +191,13 @@ func (w365data *W365Data) read_activities() {
 			FLAGS:           flags,
 		}
 		w365data.add_node("COURSES", cnode, wid)
+		if len(lessons) > 0 || block_units > 0.0 {
+			for _, g := range glist {
+				active_groups[g] = true
+			}
+		}
 	}
+	w365data.ActiveGroups = active_groups
 	// * Add the blocks to the database
 	for b, xb := range blocks {
 		xbi := w365data.NodeMap[xb.base]

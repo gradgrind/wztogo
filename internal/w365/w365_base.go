@@ -86,7 +86,9 @@ type W365Data struct {
 	NodeMap      map[string]int
 	TableMap     map[string][]int
 	Config       map[string]interface{}
-	AtomicGroups wzbase.AtomicGroups
+	ActiveGroups map[int]bool
+
+	//	AtomicGroups wzbase.AtomicGroups
 	// These are only used temporarily:
 	tables0     map[string][]ItemType
 	yeartables  map[string][]ItemType

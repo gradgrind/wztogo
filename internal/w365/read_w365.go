@@ -289,12 +289,54 @@ CREATE TABLE IF NOT EXISTS NODES(
 	for k, v := range db365.Config {
 		sdata[k] = v
 	}
-	return wzbase.WZdata{
-		Schooldata:   sdata,
-		NodeList:     db365.NodeList,
-		IndexMap:     imap,
-		TableMap:     db365.TableMap,
-		AtomicGroups: db365.AtomicGroups,
+	// Generate atomic groups for all classes
+	ag := wzbase.NewAtomicGroups()
+	for _, nc := range db365.TableMap["CLASSES"] {
+		node := db365.NodeList[nc].Node.(wzbase.Class)
+		agdivs := [][]int{}
+		for _, div := range node.DIVISIONS {
+			for _, g := range div.Groups {
+				if db365.ActiveGroups[g] {
+					if div.Tag == "" {
+						log.Fatalf(
+							"Active group (%s) not in class division: %+v",
+							wzbase.PrintGroup(db365.NodeList, g), node,
+						)
+					}
+					agdivs = append(agdivs, div.Groups)
+					for _, g = range div.Groups {
+						if !db365.ActiveGroups[g] {
+							log.Printf("Group %s has no activities\n",
+								wzbase.PrintGroup(db365.NodeList, g),
+							)
+						}
+					}
+					break
+				}
+			}
+		}
+		ag.Add_class_groups2(nc, agdivs)
 	}
-
+	/*
+		fmt.Println("\n  ****************************************")
+		fmt.Printf(" Number of atomic groups: %d\n", ag.X)
+		fmt.Printf(" ClassGroups: %+v\n", ag.Class_Groups)
+		fmt.Printf(" 12K: %+v //// 12: %+v\n",
+			ag.Class_Groups[251], ag.Class_Groups[250],
+		)
+		fmt.Println("  ++++++++++++++++++++++++++++++++++++++++++")
+		fmt.Printf(" For class 13: %+v\n", ag.Group_Atomics[wzbase.ClassGroup{
+			CIX: 252, GIX: 0,
+		}])
+		fmt.Println("  ****************************************")
+	*/
+	return wzbase.WZdata{
+		Schooldata: sdata,
+		NodeList:   db365.NodeList,
+		IndexMap:   imap,
+		TableMap:   db365.TableMap,
+		// GroupDiv:     db365.GroupDiv,
+		// AtomicGroups: db365.AtomicGroups,
+		AtomicGroups: ag,
+	}
 }

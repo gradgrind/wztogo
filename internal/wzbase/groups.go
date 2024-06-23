@@ -27,6 +27,75 @@ func NewAtomicGroups() AtomicGroups {
 	}
 }
 
+func (ag *AtomicGroups) Add_class_groups2(cix int, divisions [][]int) {
+
+	cg2rbm := ag.Group_Atomics
+	c2cg := ag.Class_Groups
+	/*
+		type grbm struct {
+			g  int
+			bm *roaring.Bitmap
+		}
+		c2groups := map[int][]grbm{}
+	*/
+	//fmt.Printf("\n********* %s:\n", cdata.ID)
+	glist0, cg := gen_class_groups2(divisions)
+	g2bm := map[int]*roaring.Bitmap{}
+	for _, g := range glist0 {
+		rbm := roaring.New()
+		g2bm[g] = rbm
+		c_g := ClassGroup{CIX: cix, GIX: g}
+		cg2rbm[c_g] = rbm
+		c2cg[cix] = append(c2cg[cix], c_g)
+		//c2groups[cix] = append(c2groups[cix], grbm{g, rbm})
+	}
+	var rbm *roaring.Bitmap
+	rbm0 := roaring.New()
+	if len(cg) == 0 {
+		ag.X++
+		rbm0 = roaring.BitmapOf(ag.X)
+	} else {
+		for _, glist := range cg {
+			ag.X++
+			rbm = roaring.BitmapOf(ag.X)
+			for _, g := range glist {
+				g2bm[g].Or(rbm)
+				rbm0.Or(rbm)
+			}
+		}
+	}
+	//c2groups[cix] = append(c2groups[cix], grbm{0, rbm0})
+	cg2rbm[ClassGroup{CIX: cix, GIX: 0}] = rbm0
+	//for _, cgr := range c2groups[cix] {
+	//	fmt.Printf("\n +++ %d: %v", cgr.g, cgr.bm)
+	//}
+}
+
+func gen_class_groups2(class_divisions [][]int) ([]int, [][]int) {
+	// If there is any ordering, it must be visible in the input data, no
+	// sorting is done here.
+	lists := [][]int{}
+	glist0 := []int{}
+	if len(class_divisions) != 0 {
+		for _, divgroups := range class_divisions {
+			lists2 := [][]int{}
+			for _, g := range divgroups {
+				glist0 = append(glist0, g)
+				if len(lists) == 0 {
+					lists2 = append(lists2, []int{g})
+				} else {
+					for j := range len(lists) {
+						lists2 = append(lists2, append(lists[j], g))
+					}
+				}
+			}
+			lists = lists2
+		}
+	}
+	//fmt.Printf("** gen_class_groups: %+v\n  %+v\n", glist0, lists)
+	return glist0, lists
+}
+
 func (ag *AtomicGroups) Add_class_groups(cix int, cdata Class) {
 
 	cg2rbm := ag.Group_Atomics

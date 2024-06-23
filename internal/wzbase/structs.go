@@ -1,5 +1,7 @@
 package wzbase
 
+import "fmt"
+
 type Timeslot struct {
 	Day  int
 	Hour int
@@ -84,6 +86,13 @@ type Class struct {
 type ClassGroup struct {
 	CIX int
 	GIX int
+}
+
+func PrintGroup(nodelist []WZnode, cg int) string {
+	node := nodelist[cg].Node.(ClassGroup)
+	c := nodelist[node.CIX].Node.(Class)
+	g := nodelist[node.GIX].Node.(Group)
+	return fmt.Sprintf("%s.%s", c.ID, g.ID)
 }
 
 type Course struct {
