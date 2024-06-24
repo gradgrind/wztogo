@@ -223,10 +223,8 @@ type fetStudentsList struct {
 }
 
 // TODO: Handle the groups ...
-// Note that there may well be "superfluous" divisions – ones with no
-// actual lessons associated. These should be stripped out for fet!
-// That might be an argument for not generating the atomic groups until
-// it is clear in which form they are needed.
+// Note that any class divisions with no actual lessons should not appear
+// in the atomic groups. This is handled before calling this function.
 func getClasses(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}

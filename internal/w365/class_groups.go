@@ -134,7 +134,6 @@ func (w365data *W365Data) read_subgroups() {
 			STUDENTS: skeys,
 		}
 		w365data.add_node("GROUPS", group, node[w365_Id])
-
 	}
 }
 

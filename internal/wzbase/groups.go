@@ -12,8 +12,9 @@ type AtomicGroups struct {
 	// X counts the atomic groups. The first one has value 1. When all have
 	// been read, X has the value of the last one, i.e. the total count.
 	X uint32
-	//TODO: Class_Groups maps a class reference to a list of its ClassGroup
-	// elements.
+	// Class_Groups maps a class reference to a list of its ClassGroup
+	// elements, excluding whole-class items, so some classes may have no
+	// entry.
 	Class_Groups map[int][]ClassGroup
 	// Group_Atomics maps a ClassGroup to its atomic groups.
 	Group_Atomics map[ClassGroup]*roaring.Bitmap

@@ -325,8 +325,8 @@ CREATE TABLE IF NOT EXISTS NODES(
 			ag.Class_Groups[251], ag.Class_Groups[250],
 		)
 		fmt.Println("  ++++++++++++++++++++++++++++++++++++++++++")
-		fmt.Printf(" For class 13: %+v\n", ag.Group_Atomics[wzbase.ClassGroup{
-			CIX: 252, GIX: 0,
+		fmt.Printf(" For class 12: %+v\n", ag.Group_Atomics[wzbase.ClassGroup{
+			CIX: 250, GIX: 0,
 		}])
 		fmt.Println("  ****************************************")
 	*/
