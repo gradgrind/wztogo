@@ -289,7 +289,12 @@ CREATE TABLE IF NOT EXISTS NODES(
 	for k, v := range db365.Config {
 		sdata[k] = v
 	}
-	// Generate atomic groups for all classes
+	// Generate atomic groups for all classes.
+	// Include only divisions containing groups which are used in the
+	// timetable.
+	// Groups not in divisions (empty division Tag) may not be used in the
+	// timetable and will be caught here.
+	cagdivs := map[int][][]int{}
 	ag := wzbase.NewAtomicGroups()
 	for _, nc := range db365.TableMap["CLASSES"] {
 		node := db365.NodeList[nc].Node.(wzbase.Class)
@@ -315,6 +320,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 				}
 			}
 		}
+		cagdivs[nc] = agdivs
 		ag.Add_class_groups2(nc, agdivs)
 	}
 	/*
@@ -337,6 +343,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 		TableMap:   db365.TableMap,
 		// GroupDiv:     db365.GroupDiv,
 		// AtomicGroups: db365.AtomicGroups,
-		AtomicGroups: ag,
+		ActiveDivisions: cagdivs,
+		AtomicGroups:    ag,
 	}
 }

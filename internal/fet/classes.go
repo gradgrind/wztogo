@@ -6,11 +6,11 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 )
 
-type fetCategory struct {
-	//XMLName             xml.Name `xml:"Category"`
-	Number_of_Divisions int
-	Division            []string
-}
+//type fetCategory struct {
+//	//XMLName             xml.Name `xml:"Category"`
+//	Number_of_Divisions int
+//	Division            []string
+//}
 
 type fetSubgroup struct {
 	Name string // 13.m.MaE
@@ -33,216 +33,73 @@ type fetClass struct {
 	// The information regarding categories, divisions of each category,
 	// and separator is only used in the dialog to divide the year
 	// automatically by categories.
-	Number_of_Categories int    // 0 or 1
-	Separator            string // "."
-	Category             []fetCategory
-	Group                []fetGroup
+	//	Number_of_Categories int    // 0 or 1
+	//	Separator            string // "."
+	//	Category             []fetCategory
+	Group []fetGroup
 }
-
-/*
-	<Name>13</Name>
-	<Number_of_Students>0</Number_of_Students>
-	<Comments>13. Klasse</Comments>
-	<!-- The information regarding categories, divisions of each category, and separator is only used in the divide year automatically by categories dialog. -->
-	<Number_of_Categories>1</Number_of_Categories>
-	<Category>
-		<Number_of_Divisions>6</Number_of_Divisions>
-		<Division>k.MaE</Division>
-		<Division>k.MaG</Division>
-		<Division>m.MaE</Division>
-		<Division>m.MaG</Division>
-		<Division>s.MaE</Division>
-		<Division>s.MaG</Division>
-	</Category>
-	<Separator>.</Separator>
-	<Group>
-		<Name>13.K</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.m.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.M</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.k.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.k.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.MaE</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.k.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.MaG</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.k.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.S</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.k.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.k.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.k</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.k.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.k.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.m</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.m.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.m.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-	<Group>
-		<Name>13.s</Name>
-		<Number_of_Students>0</Number_of_Students>
-		<Comments></Comments>
-		<Subgroup>
-			<Name>13.s.MaE</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-		<Subgroup>
-			<Name>13.s.MaG</Name>
-			<Number_of_Students>0</Number_of_Students>
-			<Comments></Comments>
-		</Subgroup>
-	</Group>
-*/
 
 type fetStudentsList struct {
 	XMLName xml.Name `xml:"Students_List"`
 	Year    []fetClass
 }
 
-// TODO: Handle the groups ...
 // Note that any class divisions with no actual lessons should not appear
 // in the atomic groups. This is handled before calling this function.
 func getClasses(wzdb *wzbase.WZdata) string {
-	trefs := wzdb.TableMap["CLASSES"]
+	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
-	for _, ti := range trefs {
-		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
-		divs := cl.DIVISIONS
-		nc := 0
-		if len(divs) > 0 {
-			nc = 1
+	for _, c := range wzdb.TableMap["CLASSES"] {
+		//    for _, ti := range trefs {
+		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
+		cl := wzdb.NodeList[wzdb.IndexMap[c]].Node.(wzbase.Class)
+		cgs := wzdb.AtomicGroups.Class_Groups[c]
+		agmap := wzdb.AtomicGroups.Group_Atomics
+		cags := agmap[wzbase.ClassGroup{
+			CIX: c, GIX: 0,
+		}]
 
+		//		divs := cl.DIVISIONS
+		//nc := 0
+		//		if len(divs) > 0 {
+		//if cags.GetCardinality() > 1 {
+		//	nc = 1
+		//}
+		cname := cl.SORTING //?
+		calt := cl.ID       //?
+		groups := []fetGroup{}
+		if cags.GetCardinality() > 1 {
+			for _, cg := range cgs {
+				g := wzdb.NodeList[cg.GIX].Node.(wzbase.Group).ID
+				gags := agmap[cg]
+
+				subgroups := []fetSubgroup{}
+				for _, ag := range gags.ToArray() {
+					subgroups = append(subgroups,
+						fetSubgroup{Name: fmt.Sprintf("%s.%03d", cname, ag)},
+					)
+					//ag_gs[int(ag)] = append(ag_gs[int(ag)], g)
+				}
+				groups = append(groups, fetGroup{
+					Name:     fmt.Sprintf("%s.%s", cname, g),
+					Subgroup: subgroups,
+				})
+			}
 		}
 		items = append(items, fetClass{
-			Name:                 cl.SORTING, //?
-			Comments:             cl.ID,      //?
-			Number_of_Categories: nc,
-			Separator:            ".",
+			Name:     cname,
+			Comments: calt,
+			Group:    groups,
 		})
-		fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
+		/*
+			items = append(items, fetClass{
+				Name:                 cl.SORTING, //?
+				Comments:             cl.ID,      //?
+				Number_of_Categories: nc,
+				Separator:            ".",
+			})
+		*/
+		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 	}
 	data := fetStudentsList{
 		Year: items,
