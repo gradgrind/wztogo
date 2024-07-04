@@ -45,7 +45,8 @@ type fetStudentsList struct {
 }
 
 // Note that any class divisions with no actual lessons should not appear
-// in the atomic groups. This is handled before calling this function.
+// in the atomic groups. This is handled before calling this function so
+// that wzdb.AtomicGroups covers only these "active" divisions.
 func getClasses(wzdb *wzbase.WZdata) string {
 	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}

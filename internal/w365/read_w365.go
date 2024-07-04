@@ -111,9 +111,10 @@ func ReadW365Raw(fpath string) W365Data {
 			"SchoolName":  schoolstate["SchoolName"],
 			"StateCode":   schoolstate["StateCode"],
 		},
-		Years:      scenario_map,
-		ActiveYear: ayear,
-		tables0:    tables,
+		Years:            scenario_map,
+		ActiveYear:       ayear,
+		tables0:          tables,
+		group_classgroup: map[int]wzbase.ClassGroup{},
 	}
 }
 
@@ -305,14 +306,18 @@ CREATE TABLE IF NOT EXISTS NODES(
 					if div.Tag == "" {
 						log.Fatalf(
 							"Active group (%s) not in class division: %+v",
-							wzbase.PrintGroup(db365.NodeList, g), node,
+							wzbase.ClassGroup{
+								CIX: nc, GIX: g,
+							}.Print(db365.NodeList), node,
 						)
 					}
 					agdivs = append(agdivs, div.Groups)
 					for _, g = range div.Groups {
 						if !db365.ActiveGroups[g] {
 							log.Printf("Group %s has no activities\n",
-								wzbase.PrintGroup(db365.NodeList, g),
+								wzbase.ClassGroup{
+									CIX: nc, GIX: g,
+								}.Print(db365.NodeList),
 							)
 						}
 					}
@@ -343,6 +348,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 		TableMap:   db365.TableMap,
 		// GroupDiv:     db365.GroupDiv,
 		// AtomicGroups: db365.AtomicGroups,
+		GroupClassgroup: db365.group_classgroup,
 		ActiveDivisions: cagdivs,
 		AtomicGroups:    ag,
 	}

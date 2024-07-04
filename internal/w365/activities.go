@@ -1,6 +1,7 @@
 package w365
 
 import (
+	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"strconv"
@@ -37,10 +38,19 @@ func (w365data *W365Data) read_activities() {
 		subject := slist[0]
 		//fmt.Printf("    --> Subject: %d\n", subject)
 		// * Get groups
-		glist := []int{}
+		glist := []wzbase.ClassGroup{}
 		for _, s := range strings.Split(node[w365_Groups], LIST_SEP) {
 			if s != "" {
-				glist = append(glist, w365data.NodeMap[s])
+
+				//TODO: This is probably not a good idea: The index can be
+				// either a GROUPS node or a CLASSES node. It should probably
+				// only be of one sort, something like ClassGroup?
+				// At present ClassGroup is just used as an index for the
+				// atomic groups.
+
+				gi := w365data.NodeMap[s]
+				fmt.Printf("??? Group %+v\n", w365data.NodeList[gi])
+				glist = append(glist, w365data.group_classgroup[gi])
 			}
 		}
 		if len(slist) != 1 {
@@ -52,14 +62,14 @@ func (w365data *W365Data) read_activities() {
 			}
 			stlist := strings.Join(snlist, ",")
 			gnlist := []string{}
-			for _, i := range glist {
+			for _, cg := range glist {
 				gnlist = append(
-					gnlist, w365data.NodeList[i].Node.(wzbase.Class).ID,
+					gnlist, cg.Print(w365data.NodeList),
 				)
 			}
 			gtlist := strings.Join(gnlist, ",")
 			log.Printf("\n=========================================\n"+
-				"  !!!  INVALID SUBJECT (%s) in Class(es) %s\n"+
+				"  !!!  INVALID SUBJECT (%s) in Class/Group(s) %s\n"+
 				"=========================================\n",
 				stlist, gtlist,
 			)
@@ -121,14 +131,14 @@ func (w365data *W365Data) read_activities() {
 			if cat.Block == "" {
 				sbj := w365data.NodeList[slist[0]].Node.(wzbase.Subject).ID
 				gnlist := []string{}
-				for _, i := range glist {
+				for _, cg := range glist {
 					gnlist = append(
-						gnlist, w365data.NodeList[i].Node.(wzbase.Class).ID,
+						gnlist, cg.Print(w365data.NodeList),
 					)
 				}
 				gtlist := strings.Join(gnlist, ",")
 				log.Printf("\n=========================================\n"+
-					"  !!!  EpochWeeks without block tag (%s) in Class(es) %s\n"+
+					"  !!!  EpochWeeks without block tag (%s) in Class/Group(s) %s\n"+
 					"=========================================\n",
 					sbj, gtlist,
 				)
@@ -192,8 +202,8 @@ func (w365data *W365Data) read_activities() {
 		}
 		w365data.add_node("COURSES", cnode, wid)
 		if len(lessons) > 0 || block_units > 0.0 {
-			for _, g := range glist {
-				active_groups[g] = true
+			for _, cg := range glist {
+				active_groups[cg.GIX] = true
 			}
 		}
 	}

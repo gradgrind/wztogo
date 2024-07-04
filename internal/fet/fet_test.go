@@ -76,4 +76,6 @@ func TestFet(t *testing.T) {
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
 	xmlitem = getClasses(&wzdb)
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
+	getCourses(&wzdb)
+
 }

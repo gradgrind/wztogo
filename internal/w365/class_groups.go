@@ -34,7 +34,9 @@ func (w365data *W365Data) read_groups() {
 		//fmt.Printf("??? DivGroup %s: %+v\n", name, gklist)
 	}
 	// Get data associated with the classes
-	for _, node := range w365data.yeartables[w365_Year] { // Waldorf365: "Grade"
+	class365_groups := map[string]map[int]int{}
+	for _, node := range w365data.yeartables[w365_Year] {
+		// w365_Year: Waldorf365: "Grade"
 		clevel := node[w365_Level]
 		cletter := node[w365_Letter]
 		cltag := clevel + cletter
@@ -46,11 +48,14 @@ func (w365data *W365Data) read_groups() {
 				skeys = append(skeys, w365data.NodeMap[s])
 			}
 		}
-		// Get all groups associated with the class
+		// Get all groups associated with the class. This is used to find
+		// groups not in a class division – see g0list (below).
 		class_groups := map[int]int{}
 		for _, n := range strings.Split(node[w365_Groups], LIST_SEP) {
 			class_groups[w365data.NodeMap[n]]++
 		}
+		// Retain the groups so that they can be associated with the class.
+		class365_groups[node[w365_Id]] = class_groups
 		// Get the divisions associated with the class, and their groups
 		divlist := []wzbase.DivGroups{}
 		divs := node[w365_YearDivs]
@@ -72,7 +77,7 @@ func (w365data *W365Data) read_groups() {
 				g0list = append(g0list, g)
 			}
 		}
-		if len(g0list) > 1 {
+		if len(g0list) > 0 {
 			divlist = append(divlist, wzbase.DivGroups{
 				Tag: "", Groups: g0list,
 			})
@@ -114,6 +119,16 @@ func (w365data *W365Data) read_groups() {
 	for _, xc := range xclasses {
 		w365data.add_node("CLASSES", xc.node, xc.wid)
 	}
+	// Build group/class -> ClassGroup association.
+	g2c := map[int]wzbase.ClassGroup{}
+	for c, gmap := range class365_groups {
+		ci := w365data.NodeMap[c]
+		for g := range gmap {
+			g2c[g] = wzbase.ClassGroup{CIX: ci, GIX: g}
+		}
+		g2c[ci] = wzbase.ClassGroup{CIX: ci, GIX: 0}
+	}
+	w365data.group_classgroup = g2c
 
 	//TODO: Compound groups ...
 }

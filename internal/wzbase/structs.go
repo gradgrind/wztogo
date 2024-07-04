@@ -88,16 +88,18 @@ type ClassGroup struct {
 	GIX int
 }
 
-func PrintGroup(nodelist []WZnode, cg int) string {
-	node := nodelist[cg].Node.(ClassGroup)
-	c := nodelist[node.CIX].Node.(Class)
-	g := nodelist[node.GIX].Node.(Group)
+func (cg ClassGroup) Print(nodelist []WZnode) string {
+	c := nodelist[cg.CIX].Node.(Class)
+	if cg.GIX == 0 {
+		return c.ID
+	}
+	g := nodelist[cg.GIX].Node.(Group)
 	return fmt.Sprintf("%s.%s", c.ID, g.ID)
 }
 
 type Course struct {
 	TEACHERS        []int
-	GROUPS          []int
+	GROUPS          []ClassGroup
 	SUBJECT         int
 	ROOM_WISH       []int
 	WORKLOAD        float64
@@ -146,9 +148,10 @@ type WZDB struct { // for the NODES table in the sqlite database
 // database).
 type WZdata struct {
 	Schooldata      map[string]interface{}
-	NodeList        []WZnode         // all the db rows
-	IndexMap        map[int]int      // map reference to NodeList index
-	TableMap        map[string][]int // map table name to list of references
+	NodeList        []WZnode           // all the db rows
+	IndexMap        map[int]int        // map reference to NodeList index
+	TableMap        map[string][]int   // map table name to list of references
+	GroupClassgroup map[int]ClassGroup // map group/class index to ClassGroup
 	ActiveDivisions map[int][][]int
 	AtomicGroups    AtomicGroups
 }

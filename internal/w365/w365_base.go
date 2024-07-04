@@ -90,10 +90,11 @@ type W365Data struct {
 
 	//	AtomicGroups wzbase.AtomicGroups
 	// These are only used temporarily:
-	tables0     map[string][]ItemType
-	yeartables  map[string][]ItemType
-	absencemap  map[string]wzbase.Timeslot
-	categorymap map[string]Category
+	tables0          map[string][]ItemType
+	yeartables       map[string][]ItemType
+	group_classgroup map[int]wzbase.ClassGroup
+	absencemap       map[string]wzbase.Timeslot
+	categorymap      map[string]Category
 }
 
 type YearData struct {
