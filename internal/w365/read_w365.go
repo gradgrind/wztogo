@@ -43,6 +43,14 @@ func ReadW365Raw(fpath string) W365Data {
 	defer f.Close()
 	// read the file line by line using scanner
 	scanner := bufio.NewScanner(f)
+	//TODO: The default buffer size should be plenty, but the Waldorf 365
+	// text editor is very messy and retains no end of junk, including
+	// office markup, images, etc. I hope a newer version will perform
+	// adequate sanitizing!
+	bufsize := 100000
+	buffer := make([]byte, bufsize)
+	scanner.Buffer(buffer, bufsize)
+
 	var item ItemType
 	var schoolstate ItemType
 	scenarios := []ItemType{}
@@ -115,6 +123,7 @@ func ReadW365Raw(fpath string) W365Data {
 		ActiveYear:       ayear,
 		tables0:          tables,
 		group_classgroup: map[int]wzbase.ClassGroup{},
+		class_group_div:  map[int]map[int]int{},
 	}
 }
 
@@ -182,6 +191,9 @@ func (w365data *W365Data) ReadYear(year string) {
 		"EpochFactor": year_data.EpochFactor,
 		"LastChanged": year_data.LastChanged,
 	}
+	//TODO--
+	fmt.Printf("\n §§§§§§§§§§§§§§§§§§§§§§§\n %+v\n §§§§§§§§§§§§§§§§§§§§§§§\n",
+		w365data.Yeardata)
 }
 
 // Convert an input date. In the Waldorf365 data dumps, "DateOfBirth" fields
@@ -299,9 +311,12 @@ CREATE TABLE IF NOT EXISTS NODES(
 	ag := wzbase.NewAtomicGroups()
 	for _, nc := range db365.TableMap["CLASSES"] {
 		node := db365.NodeList[nc].Node.(wzbase.Class)
+		//fmt.Printf("\n+++CLASS: %+v\n", node)
 		agdivs := [][]int{}
 		for _, div := range node.DIVISIONS {
+			//fmt.Printf("  ---DIV: %+v\n", div)
 			for _, g := range div.Groups {
+				//fmt.Printf("    ~~~GROUP: %+v\n", g)
 				if db365.ActiveGroups[g] {
 					if div.Tag == "" {
 						log.Fatalf(

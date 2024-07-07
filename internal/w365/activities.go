@@ -30,37 +30,37 @@ func (w365data *W365Data) read_activities() {
 		// * There must be exactly one subject. Courses with multiple subjects
 		// should be replaced by (defined) blocks.
 		slist := []int{}
-		for _, s := range strings.Split(node[w365_Subjects], LIST_SEP) {
-			if s != "" {
-				slist = append(slist, w365data.NodeMap[s])
+		sstring := node[w365_Subjects]
+		if sstring != "" {
+			for _, s := range strings.Split(sstring, LIST_SEP) {
+				if s != "" {
+					slist = append(slist, w365data.NodeMap[s])
+				}
 			}
 		}
-		subject := slist[0]
-		//fmt.Printf("    --> Subject: %d\n", subject)
-		// * Get groups
+		// * Get groups, TODO: check mutual compatibility
 		glist := []wzbase.ClassGroup{}
 		for _, s := range strings.Split(node[w365_Groups], LIST_SEP) {
 			if s != "" {
-
-				//TODO: This is probably not a good idea: The index can be
-				// either a GROUPS node or a CLASSES node. It should probably
-				// only be of one sort, something like ClassGroup?
-				// At present ClassGroup is just used as an index for the
-				// atomic groups.
-
+				// The reference can be to either a W365-Group or to a
+				// W365-Year (class). Internally these are transformed to
+				// ClassGroup items, so that only a single type is used.
 				gi := w365data.NodeMap[s]
-				fmt.Printf("??? Group %+v\n", w365data.NodeList[gi])
-				glist = append(glist, w365data.group_classgroup[gi])
+				cg := w365data.group_classgroup[gi]
+				glist = append(glist, cg)
 			}
 		}
 		if len(slist) != 1 {
-			snlist := []string{}
-			for _, i := range slist {
-				snlist = append(
-					snlist, w365data.NodeList[i].Node.(wzbase.Subject).ID,
-				)
+			stlist := ""
+			if len(slist) != 0 {
+				snlist := []string{}
+				for _, i := range slist {
+					snlist = append(
+						snlist, w365data.NodeList[i].Node.(wzbase.Subject).ID,
+					)
+				}
+				stlist = strings.Join(snlist, ",")
 			}
-			stlist := strings.Join(snlist, ",")
 			gnlist := []string{}
 			for _, cg := range glist {
 				gnlist = append(
@@ -75,6 +75,7 @@ func (w365data *W365Data) read_activities() {
 			)
 			continue
 		}
+		subject := slist[0]
 		//fmt.Printf("    --> Groups: %+v\n", glist)
 		// * Get rooms
 		rlist := []int{}
@@ -208,12 +209,18 @@ func (w365data *W365Data) read_activities() {
 		}
 	}
 	w365data.ActiveGroups = active_groups
-	// * Add the blocks to the database
+	// * Add the blocks to the database, checking that the component groups
+	// are compatible with the base groups, in a rather flexible way ...
 	for b, xb := range blocks {
 		xbi := w365data.NodeMap[xb.base]
+		basenode := w365data.NodeList[xbi]
+		basegroups := basenode.Node.(wzbase.Course).GROUPS
+		//TODO--
+		fmt.Printf("\n $$$ basegroups %s: %#v\n", b, basegroups)
 		xcl := []int{}
 		for _, xc := range xb.components {
-			xcl = append(xcl, w365data.NodeMap[xc])
+			xci := w365data.NodeMap[xc]
+			xcl = append(xcl, xci)
 		}
 		bnode := wzbase.Block{
 			Tag:        b,

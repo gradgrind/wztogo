@@ -11,8 +11,8 @@ import (
 //}
 
 func TestFet(t *testing.T) {
-	w365file := "../_testdata/fms.w365"
-	// w365file := "../_testdata/test.w365"
+	// w365file := "../_testdata/fms.w365"
+	w365file := "../_testdata/test.w365"
 	wzdb := w365.ReadW365(w365file)
 
 	fmt.Println("\n *******************************************")
@@ -20,7 +20,7 @@ func TestFet(t *testing.T) {
 		//fmt.Printf("\n Class_Groups: %+v\n", wzdb.AtomicGroups.Class_Groups)
 		fmt.Printf("\n Classes: %+v\n", wzdb.TableMap["CLASSES"])
 		for _, c := range wzdb.TableMap["CLASSES"] {
-			// ???
+			// ??
 			ag_gs := map[int][]string{}
 
 			ndivs := len(wzdb.ActiveDivisions[c])

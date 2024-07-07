@@ -11,11 +11,17 @@ func getCourses(wzdb *wzbase.WZdata) string {
 		bnode := wzdb.NodeList[wzdb.IndexMap[bi]].Node.(wzbase.Block)
 		bbnode := wzdb.NodeList[wzdb.IndexMap[bnode.Base]].Node.(wzbase.Course)
 		fmt.Printf("* Block %s Base %+v\n", bnode.Tag, bbnode)
-		//TODO: Why does the base course have all these groups? Those are the
-		// classes declared in the source for HU in block HU_OS. But shouldn't
-		// they be ClassGroup, not Class?
-		// There should probably be a check that there is no conflict with
-		// the groups declared in the components.
+		// The GROUPS field is a list of the classes/groups declared in the
+		// (W365) source for the "main" entry for the block, the one specifying
+		// the lessons. They are ClassGroup items.
+
+		//TODO: There should probably be a check that there is no conflict with
+		// the groups declared in the components. But this is not the job of
+		// the fet generator, it should be handled when reading the source.
+		// Perhaps the best result would be to ensure that the entries in
+		// GROUPS covers all needed ClassGroup items for the block. Then the
+		// subcourses would not need consulting for the timetable.
+
 		for _, bci := range bnode.Components {
 			bcnode := wzdb.NodeList[wzdb.IndexMap[bci]].Node.(wzbase.Course)
 			for _, cg := range bcnode.GROUPS {
@@ -33,7 +39,7 @@ func getCourses(wzdb *wzbase.WZdata) string {
 			cs := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Course)
 			// Determine what "type" of course it is. The groups participating
 			// in any course with lessons must be in divisions. Multiple groups
-			// within a class must be in the same division (??? really?). The
+			// within a class must be in the same division (?? really?). The
 			// lessons can be either normal (LESSONS) or in a block/Epoche
 			// (BLOCK_UNITS).
 

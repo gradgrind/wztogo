@@ -51,8 +51,11 @@ func (w365data *W365Data) read_groups() {
 		// Get all groups associated with the class. This is used to find
 		// groups not in a class division – see g0list (below).
 		class_groups := map[int]int{}
-		for _, n := range strings.Split(node[w365_Groups], LIST_SEP) {
-			class_groups[w365data.NodeMap[n]]++
+		g365 := node[w365_Groups]
+		if g365 != "" {
+			for _, n := range strings.Split(g365, LIST_SEP) {
+				class_groups[w365data.NodeMap[n]] = -1
+			}
 		}
 		// Retain the groups so that they can be associated with the class.
 		class365_groups[node[w365_Id]] = class_groups
@@ -66,14 +69,16 @@ func (w365data *W365Data) read_groups() {
 					divgroups.Tag = fmt.Sprintf("#%d", i)
 				}
 				for _, g := range divgroups.Groups {
-					class_groups[g]--
+					class_groups[g] = i
 				}
 				divlist = append(divlist, divgroups)
 			}
 		}
+		//fmt.Printf("??? class365_groups: %+v\n", class_groups)
+		//fmt.Printf("  ???divlist: %+v\n", divlist)
 		g0list := []int{}
 		for g, n := range class_groups {
-			if n > 0 {
+			if n < 0 {
 				g0list = append(g0list, g)
 			}
 		}
@@ -123,14 +128,16 @@ func (w365data *W365Data) read_groups() {
 	g2c := map[int]wzbase.ClassGroup{}
 	for c, gmap := range class365_groups {
 		ci := w365data.NodeMap[c]
+		// Retain group -> div mapping
+		w365data.class_group_div[ci] = gmap
 		for g := range gmap {
 			g2c[g] = wzbase.ClassGroup{CIX: ci, GIX: g}
 		}
 		g2c[ci] = wzbase.ClassGroup{CIX: ci, GIX: 0}
 	}
 	w365data.group_classgroup = g2c
-
-	//TODO: Compound groups ...
+	//fmt.Printf("???+++ class_group_div: %+v\n", w365data.class_group_div)
+	//Waldorf 365 doesn't support "compound groups (like B=BG+R)
 }
 
 func (w365data *W365Data) read_subgroups() {
