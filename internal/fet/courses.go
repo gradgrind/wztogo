@@ -24,11 +24,9 @@ func getCourses(wzdb *wzbase.WZdata) string {
 
 		for _, bci := range bnode.Components {
 			bcnode := wzdb.NodeList[wzdb.IndexMap[bci]].Node.(wzbase.Course)
-			for _, cg := range bcnode.GROUPS {
-				fmt.Printf("* Block %s Group %s\n",
-					bnode.Tag, cg.Print(wzdb.NodeList),
-				)
-			}
+			fmt.Printf("* Block %s Group(s) %s\n",
+				bnode.Tag, bcnode.GROUPS.Print(wzdb.NodeList),
+			)
 		}
 	}
 

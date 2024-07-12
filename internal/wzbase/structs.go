@@ -1,6 +1,9 @@
 package wzbase
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Timeslot struct {
 	Day  int
@@ -73,6 +76,29 @@ type DivGroups struct {
 	Groups []int
 }
 
+type DivIndexGroups struct {
+	Div    int
+	Groups []int
+}
+
+type ClassDivGroups struct {
+	Class  int
+	Div    int
+	Groups []int
+}
+
+type CourseGroups []ClassDivGroups
+
+func (cgs CourseGroups) Print(nodelist []WZnode) string {
+	gnlist := []string{}
+	for _, cdgs := range cgs {
+		for _, g := range cdgs.Groups {
+			gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(nodelist))
+		}
+	}
+	return strings.Join(gnlist, ",")
+}
+
 type Class struct {
 	ID            string // normal short name of class
 	SORTING       string // sortable short name of class
@@ -99,7 +125,7 @@ func (cg ClassGroup) Print(nodelist []WZnode) string {
 
 type Course struct {
 	TEACHERS        []int
-	GROUPS          []ClassGroup
+	GROUPS          CourseGroups
 	SUBJECT         int
 	ROOM_WISH       []int
 	WORKLOAD        float64
