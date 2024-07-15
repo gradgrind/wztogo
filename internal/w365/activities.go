@@ -49,13 +49,9 @@ func (w365data *W365Data) read_activities() {
 			}
 			stlist = strings.Join(snlist, ",")
 		}
-		// * Get groups for this course
-		type cdxItem struct {
-			div    int
-			groups map[int]bool
-		}
-		cdmap := map[int]cdxItem{} // This collects class + division,
-		// only one division per class is permitted.
+		// * Get groups for this course. If a whole class is not selected,
+		// only one division in the class is permitted.
+		cgroups := wzbase.CourseGroups{}
 		for _, s := range strings.Split(node[w365_Groups], LIST_SEP) {
 			if s != "" {
 				// The reference can be to either a W365-Group or to a
@@ -63,80 +59,25 @@ func (w365data *W365Data) read_activities() {
 				// ClassGroup items, so that only a single type is used.
 				gi := w365data.NodeMap[s]
 				cg := w365data.group_classgroup[gi]
-				cdx, ok := cdmap[cg.CIX]
-				if ok {
-					// If the whole class is already covered, anything else
-					// is superfluous.
-					if cdx.div == -1 {
-						log.Printf("Class %s, subject %s: superfluous group",
-							w365data.NodeList[cg.CIX].Node.(wzbase.Class).ID,
-							stlist,
-						)
-					} else {
-						// If the new group is "whole class", set the division
-						// accordingly, previous entries are superfluous.
-						if cg.GIX == 0 {
-							cdmap[cg.CIX] = cdxItem{div: -1}
-							log.Printf(
-								"Class %s, subject %s: superfluous group",
-								w365data.NodeList[cg.CIX].Node.(wzbase.Class).ID,
-								stlist,
-							)
-						} else {
-							// If the new division matches the existing one, add
-							// the group.
-							gd := w365data.class_group_div[cg.CIX][cg.GIX]
-							if gd == cdx.div {
-								cdx.groups[cg.GIX] = true
-								// Check that the result is not equivalent
-								// to "whole class"
-								divs := w365data.NodeList[cg.CIX].Node.(wzbase.Class).DIVISIONS[gd]
-								if len(cdx.groups) == len(divs.Groups) {
-									// Substitute the whole class
-									cdmap[cg.CIX] = cdxItem{div: -1}
-								}
-							} else {
-								log.Printf("Class %s, subject %s:"+
-									" groups from different divisions",
-									w365data.NodeList[cg.CIX].Node.(wzbase.Class).ID,
-									stlist,
-								)
-							}
-						}
-					}
+				if cg.GIX == 0 {
+					cgroups = append(cgroups,
+						wzbase.ClassDivGroups{Class: cg.CIX, Div: -1})
 				} else {
-					// First group in this class
-					if cg.GIX == 0 {
-						// whole class
-						cdmap[cg.CIX] = cdxItem{div: -1}
-					} else {
-						gd := w365data.class_group_div[cg.CIX][cg.GIX]
-						cdmap[cg.CIX] = cdxItem{gd, map[int]bool{cg.GIX: true}}
-					}
+					// Get the division
+					d := w365data.class_group_div[cg.CIX][cg.GIX]
+					cgroups = append(cgroups,
+						wzbase.ClassDivGroups{
+							Class:  cg.CIX,
+							Div:    d,
+							Groups: []int{cg.GIX},
+						})
 				}
 			}
 		}
-		// Use cdmap to make a wzbase.CourseGroups list. Note that the groups
-		// will not be properly sorted.
-		cdglist := make(wzbase.CourseGroups, len(cdmap))
-		i := 0
-		for c, dig := range cdmap {
-			keys := make([]int, len(dig.groups))
-			if dig.div >= 0 {
-				j := 0
-				for k := range dig.groups {
-					keys[j] = k
-					j++
-				}
-			}
-			cdglist[i] = wzbase.ClassDivGroups{
-				Class: c, Div: dig.div, Groups: keys,
-			}
-			i++
-		}
-
-		//TODO: The groups (cdgmap) should later be added to the groups for
-		// the block, which should then be checked against those of the base
+		cdglist := wzbase.CourseGroups{}
+		cdglist.AddCourseGroups(w365data.NodeList, cgroups)
+		// The groups (cdglist) are later added to the groups for
+		// the block, which are then be checked against those of the base
 		// course.
 
 		// * Report invalid subject. It is placed here so that the group(s)
@@ -292,18 +233,64 @@ func (w365data *W365Data) read_activities() {
 	for b, xb := range blocks {
 		xbi := w365data.NodeMap[xb.base]
 		basenode := w365data.NodeList[xbi]
+		blockgroups := wzbase.CourseGroups{}
 		basegroups := basenode.Node.(wzbase.Course).GROUPS
+		bgmap := map[int]bool{}
+		if len(basegroups) != 0 {
+			for _, cdg := range basegroups {
+				if cdg.Div == -1 {
+					bgmap[-cdg.Class] = true
+				} else {
+					for _, g := range cdg.Groups {
+						bgmap[g] = true
+					}
+				}
+			}
+		}
 		//TODO--
 		fmt.Printf("\n $$$ basegroups %s: %#v\n", b, basegroups)
 		xcl := []int{}
 		for _, xc := range xb.components {
 			xci := w365data.NodeMap[xc]
 			xcl = append(xcl, xci)
+			node := w365data.NodeList[xci]
+			course := node.Node.(wzbase.Course)
+			groups := course.GROUPS
+			if len(basegroups) == 0 {
+				// Add this course's groups to blockgroups.
+				if !blockgroups.AddCourseGroups(w365data.NodeList, groups) {
+					log.Fatalf("Incompatible group in course %s\n",
+						course.Print(w365data.NodeList))
+				}
+			} else {
+				// Check that this course's groups are a subset of basegroups
+				for _, cdg := range groups {
+					c := cdg.Class
+					if !bgmap[-c] {
+						// Full class not included, check groups
+						if cdg.Div == -1 {
+							log.Fatalf("Course class not in block groups: %s\n",
+								course.Print(w365data.NodeList))
+						} else {
+							for _, g := range cdg.Groups {
+								if !bgmap[g] {
+									log.Fatalf("Course group not subset of block groups: %s\n",
+										course.Print(w365data.NodeList))
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if len(basegroups) == 0 {
+			basegroups = blockgroups
 		}
 		bnode := wzbase.Block{
-			Tag:        b,
-			Base:       xbi,
-			Components: xcl,
+			Tag:         b,
+			Base:        xbi,
+			Components:  xcl,
+			BlockGroups: basegroups,
 		}
 		w365data.add_node("BLOCKS", bnode, "")
 	}

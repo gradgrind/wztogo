@@ -76,10 +76,12 @@ type DivGroups struct {
 	Groups []int
 }
 
+/*
 type DivIndexGroups struct {
 	Div    int
 	Groups []int
 }
+*/
 
 type ClassDivGroups struct {
 	Class  int
@@ -97,6 +99,54 @@ func (cgs CourseGroups) Print(nodelist []WZnode) string {
 		}
 	}
 	return strings.Join(gnlist, ",")
+}
+
+// AddCourseGroups adds the groups from a course to a base CourseGroups
+// item, when they are not already contained in the base. Unless the whole
+// class is covered, added groups must be in the same division within a class.
+func (cg0 *CourseGroups) AddCourseGroups(
+	nodelist []WZnode, cg CourseGroups) bool {
+	var divs DivGroups
+	for _, cdg := range cg {
+		for i, cdg0 := range *cg0 {
+			if cdg0.Class == cdg.Class {
+				if cdg0.Div != -1 {
+					if cdg.Div == -1 {
+						// Update to full class
+						(*cg0)[i] = ClassDivGroups{Class: cdg0.Class, Div: -1}
+					} else {
+						// Check division compatibility
+						if cdg0.Div != cdg.Div {
+							return false
+						}
+						// Add groups which are not already contained
+						for _, g := range cdg.Groups {
+							for _, g0 := range cdg0.Groups {
+								if g0 == g {
+									goto skip
+								}
+							}
+							cdg0.Groups = append(cdg0.Groups, g)
+							// Test whether now full class
+							divs = nodelist[cdg.Class].Node.(Class).DIVISIONS[cdg.Div]
+							if len(cdg0.Groups) == len(divs.Groups) {
+								// Substitute the whole class
+								(*cg0)[i] = ClassDivGroups{Class: cdg0.Class, Div: -1}
+							} else {
+								(*cg0)[i] = cdg0
+							}
+						skip:
+						}
+					}
+				}
+				goto cfound
+			}
+		}
+		// else: Add class
+		*cg0 = append(*cg0, cdg)
+	cfound:
+	}
+	return true
 }
 
 type Class struct {
@@ -135,10 +185,21 @@ type Course struct {
 	FLAGS           map[string]bool
 }
 
+func (c Course) Print(nodelist []WZnode) string {
+	g := c.GROUPS.Print(nodelist)
+	s := nodelist[c.SUBJECT].Node.(Subject).ID
+	tl := []string{}
+	for _, ti := range c.TEACHERS {
+		tl = append(tl, nodelist[ti].Node.(Teacher).ID)
+	}
+	return fmt.Sprintf("<%s-%s-%s>", g, s, strings.Join(tl, ","))
+}
+
 type Block struct {
-	Tag        string
-	Base       int
-	Components []int
+	Tag         string
+	Base        int
+	Components  []int
+	BlockGroups CourseGroups
 }
 
 type Lesson struct {

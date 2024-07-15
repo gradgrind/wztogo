@@ -3,6 +3,8 @@ package fet
 import (
 	"fmt"
 	"gradgrind/wztogo/internal/w365"
+	"gradgrind/wztogo/internal/wzbase"
+	"log"
 	"testing"
 )
 
@@ -78,4 +80,17 @@ func TestFet(t *testing.T) {
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
 	getCourses(&wzdb)
 
+	cg0 := wzbase.CourseGroups{}
+	cg := wzbase.CourseGroups{}
+	cg = append(cg, wzbase.ClassDivGroups{Class: 386, Div: 0, Groups: []int{308}})
+	cg = append(cg, wzbase.ClassDivGroups{Class: 2, Div: -1})
+	cg = append(cg, wzbase.ClassDivGroups{Class: 386, Div: 0, Groups: []int{308, 328}})
+	cg = append(cg, wzbase.ClassDivGroups{Class: 2, Div: 1, Groups: []int{10, 13}})
+	//cg = append(cg, wzbase.ClassDivGroups{Class: 386, Div: 0, Groups: []int{311, 328}})
+	cg = append(cg, wzbase.ClassDivGroups{Class: 2, Div: 2, Groups: []int{14, 15}})
+	//cg = append(cg, wzbase.ClassDivGroups{Class: 386, Div: 1, Groups: []int{18}})
+	if !cg0.AddCourseGroups(wzdb.NodeList, cg) {
+		log.Fatalln("INCOMPATIBLE GROUP")
+	}
+	log.Printf("\n --> %+v\n", cg0)
 }
