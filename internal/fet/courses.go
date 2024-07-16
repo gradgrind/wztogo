@@ -10,21 +10,12 @@ func getCourses(wzdb *wzbase.WZdata) string {
 	for _, bi := range wzdb.TableMap["BLOCKS"] {
 		bnode := wzdb.NodeList[wzdb.IndexMap[bi]].Node.(wzbase.Block)
 		bbnode := wzdb.NodeList[wzdb.IndexMap[bnode.Base]].Node.(wzbase.Course)
-		fmt.Printf("* Block %s Base %+v\n", bnode.Tag, bbnode)
-		// The GROUPS field is a list of the classes/groups declared in the
-		// (W365) source for the "main" entry for the block, the one specifying
-		// the lessons. They are ClassGroup items.
-
-		//TODO: There should probably be a check that there is no conflict with
-		// the groups declared in the components. But this is not the job of
-		// the fet generator, it should be handled when reading the source.
-		// Perhaps the best result would be to ensure that the entries in
-		// GROUPS covers all needed ClassGroup items for the block. Then the
-		// subcourses would not need consulting for the timetable.
+		fmt.Printf("* Block %+v\n+ Base %+v\n", bnode, bbnode)
+		// The block groups are at bnode.BlockGroups.
 
 		for _, bci := range bnode.Components {
 			bcnode := wzdb.NodeList[wzdb.IndexMap[bci]].Node.(wzbase.Course)
-			fmt.Printf("* Block %s Group(s) %s\n",
+			fmt.Printf(" - Block %s Group(s) %s\n",
 				bnode.Tag, bcnode.GROUPS.Print(wzdb.NodeList),
 			)
 		}

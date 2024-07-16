@@ -1,7 +1,6 @@
 package w365
 
 import (
-	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"strconv"
@@ -92,13 +91,65 @@ func (w365data *W365Data) read_activities() {
 		}
 		subject := slist[0]
 		// * Get rooms
-		rlist := []int{}
-		for _, s := range strings.Split(node[w365_PreferredRooms], LIST_SEP) {
-			if s != "" {
-				rlist = append(rlist, w365data.NodeMap[s])
+		// I'd like to keep the room handling fairly flexible. That would
+		// mean accepting compulsory rooms, rooms chosen from a list,
+		// rooms requiring manual input. The wzbase.RoomSpec structure
+		// should be able to cater for this. Waldorf 365 only supports a
+		// subset.
+
+		// Room groups should not be in the database. These get converted
+		// to multiple compulsory rooms.
+
+		var roomspec wzbase.RoomSpec
+		rfield := node[w365_PreferredRooms]
+		if rfield == "" {
+			// Assume a user-input room
+			roomspec = wzbase.RoomSpec{
+				Compulsory: []int{},
+				Choices:    [][]int{},
+				UserInput:  1,
+			}
+		} else {
+			rlist := [][]int{}
+			for _, s := range strings.Split(rfield, LIST_SEP) {
+				rg, ok := w365data.room_group[s]
+				if ok {
+					rlist = append(rlist, rg)
+				} else {
+					rlist = append(rlist, []int{w365data.NodeMap[s]})
+				}
+			}
+			if len(rlist) == 1 {
+				// A single compulsory room (list)
+				roomspec = wzbase.RoomSpec{
+					Compulsory: rlist[0],
+					Choices:    [][]int{},
+					UserInput:  0,
+				}
+			} else {
+				// A single room-choice list
+				choices := []int{}
+				for _, rc := range rlist {
+					if len(rc) != 1 {
+						// Don't allow room groups in a choice list
+						log.Printf("\n=========================================\n"+
+							"  !!!  Room group in room choice list: %s (%s)\n"+
+							"=========================================\n",
+							cdglist.Print(w365data.NodeList), stlist,
+						)
+						choices = choices[:0] // clear list
+						break
+					}
+					choices = append(choices, rc[0])
+				}
+				roomspec = wzbase.RoomSpec{
+					Compulsory: []int{},
+					Choices:    [][]int{choices},
+					UserInput:  0,
+				}
 			}
 		}
-		//fmt.Printf("    --> Rooms: %+v\n", rlist)
+		//fmt.Printf("    --> Rooms: %+v\n", roomspec)
 		// * Get the "workload override" (<0 => no override)
 		var workload float64
 		wl := node[w365_HandWorkload]
@@ -177,12 +228,13 @@ func (w365data *W365Data) read_activities() {
 						)
 					}
 					if !cat.Role["NoReport"] {
-						//TODO: Really fatal? Anyway, I would need a better
-						// message, to identify the course.
-						log.Fatalf(
-							"'Epochenschiene' without 'NoReport': "+
-								"course Id = %s\n", wid,
+						//TODO: Really fatal?
+						log.Fatalf("\n=========================================\n"+
+							"  !!!  'Epochenschiene' without 'NoReport': %s (%s)\n"+
+							"=========================================\n",
+							cdglist.Print(w365data.NodeList), stlist,
 						)
+
 					}
 					bdata.base = wid
 				} else {
@@ -209,7 +261,7 @@ func (w365data *W365Data) read_activities() {
 			TEACHERS:        tlist,
 			GROUPS:          cdglist,
 			SUBJECT:         subject,
-			ROOM_WISH:       rlist,
+			ROOM_WISH:       roomspec,
 			WORKLOAD:        workload,
 			WORKLOAD_FACTOR: cat.WorkloadFactor,
 			LESSONS:         lessons,
@@ -230,11 +282,12 @@ func (w365data *W365Data) read_activities() {
 	w365data.ActiveGroups = active_groups
 	// * Add the blocks to the database, checking that the component groups
 	// are compatible with the base groups, in a rather flexible way ...
+	// Also the teachers and rooms should be gathered.
 	for b, xb := range blocks {
 		xbi := w365data.NodeMap[xb.base]
-		basenode := w365data.NodeList[xbi]
+		basecourse := w365data.NodeList[xbi].Node.(wzbase.Course)
 		blockgroups := wzbase.CourseGroups{}
-		basegroups := basenode.Node.(wzbase.Course).GROUPS
+		basegroups := basecourse.GROUPS
 		bgmap := map[int]bool{}
 		if len(basegroups) != 0 {
 			for _, cdg := range basegroups {
@@ -247,14 +300,22 @@ func (w365data *W365Data) read_activities() {
 				}
 			}
 		}
-		//TODO--
-		fmt.Printf("\n $$$ basegroups %s: %#v\n", b, basegroups)
+		//fmt.Printf("\n $$$ basegroups %s: %#v\n", b, basegroups)
 		xcl := []int{}
+		var tlist []int // collect teacher indexes
+		tlist = append(tlist, basecourse.TEACHERS...)
+		baserooms := basecourse.ROOM_WISH
+		rspec := wzbase.RoomSpec{ // collect room indexes
+			Compulsory: baserooms.Compulsory,
+			Choices:    [][]int{},
+			UserInput:  0,
+		}
 		for _, xc := range xb.components {
 			xci := w365data.NodeMap[xc]
 			xcl = append(xcl, xci)
 			node := w365data.NodeList[xci]
 			course := node.Node.(wzbase.Course)
+			// + Deal with the groups
 			groups := course.GROUPS
 			if len(basegroups) == 0 {
 				// Add this course's groups to blockgroups.
@@ -282,15 +343,87 @@ func (w365data *W365Data) read_activities() {
 					}
 				}
 			}
+			// + Deal with the teachers.
+		tloop:
+			for _, ti := range course.TEACHERS {
+				for _, ti0 := range tlist {
+					if ti0 == ti {
+						continue tloop
+					}
+				}
+				tlist = append(tlist, ti)
+			}
+			// + Deal with the rooms.
+		rloop1:
+			for _, ri := range course.ROOM_WISH.Compulsory {
+				for _, ri0 := range rspec.Compulsory {
+					if ri0 == ri {
+						continue rloop1
+					}
+				}
+				rspec.Compulsory = append(rspec.Compulsory, ri)
+			}
+			// Handling choices is somewhat tricky, to put it mildly ...
+			// Indeed it is not at all obvious how they should be handled
+			// in a useful way. So I'll cop out a bit and only pass through
+			// choices in the base course.
+			if len(course.ROOM_WISH.Choices) != 0 {
+				log.Printf("Block course, room choices will be ignored: %s\n",
+					course.Print(w365data.NodeList))
+			}
+			// An empty room field is ignored here.
+		}
+		if len(basecourse.TEACHERS) > 0 {
+			txlist := []string{}
+		tloop2:
+			for _, ti := range tlist {
+				for _, ti0 := range basecourse.TEACHERS {
+					if ti0 == ti {
+						continue tloop2
+					}
+				}
+				txlist = append(txlist,
+					w365data.NodeList[ti].Node.(wzbase.Teacher).ID)
+			}
+			if len(txlist) > 0 {
+				log.Printf("Block course, added teachers: %s\n  to %s\n",
+					strings.Join(txlist, ","),
+					basecourse.Print(w365data.NodeList))
+			}
+		}
+		if len(baserooms.Choices) == 1 {
+			// Attempt at doing something with room choice list in the
+			// base course ...
+			//TODO: any better ideas?
+			rclist := []int{}
+		rloop2:
+			for _, ri := range baserooms.Choices[0] {
+				// Waldorf 365 can only provide a single list.
+				for _, ri0 := range rspec.Compulsory {
+					if ri0 == ri {
+						continue rloop2
+					}
+				}
+				rclist = append(rclist, ri)
+			}
+			if len(rclist) > 0 {
+				if len(rclist) == 1 {
+					rspec.Compulsory = append(rspec.Compulsory, rclist[0])
+				} else {
+					rspec.Choices = [][]int{rclist}
+				}
+			}
 		}
 		if len(basegroups) == 0 {
 			basegroups = blockgroups
 		}
 		bnode := wzbase.Block{
-			Tag:         b,
-			Base:        xbi,
-			Components:  xcl,
-			BlockGroups: basegroups,
+			Tag:           b,
+			Base:          xbi,
+			Components:    xcl,
+			BlockGroups:   basegroups,
+			BlockTeachers: tlist,
+			BlockRooms:    rspec,
 		}
 		w365data.add_node("BLOCKS", bnode, "")
 	}

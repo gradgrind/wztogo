@@ -45,7 +45,14 @@ type Room struct {
 	NAME          string
 	X             int
 	NOT_AVAILABLE []([]int)
-	SUBROOMS      []int // room group: indexes of component rooms
+}
+
+// Roomspec describes the room requirements for a course. The total number
+// of rooms required is len(Compulory) + len(Choices) + UserInput.
+type RoomSpec struct {
+	Compulsory []int
+	Choices    [][]int
+	UserInput  int // or []int ?
 }
 
 type Student struct {
@@ -177,7 +184,7 @@ type Course struct {
 	TEACHERS        []int
 	GROUPS          CourseGroups
 	SUBJECT         int
-	ROOM_WISH       []int
+	ROOM_WISH       RoomSpec
 	WORKLOAD        float64
 	WORKLOAD_FACTOR float64
 	LESSONS         []int
@@ -196,10 +203,12 @@ func (c Course) Print(nodelist []WZnode) string {
 }
 
 type Block struct {
-	Tag         string
-	Base        int
-	Components  []int
-	BlockGroups CourseGroups
+	Tag           string
+	Base          int
+	Components    []int
+	BlockGroups   CourseGroups
+	BlockTeachers []int
+	BlockRooms    RoomSpec
 }
 
 type Lesson struct {

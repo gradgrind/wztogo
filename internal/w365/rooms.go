@@ -52,12 +52,22 @@ func (w365data *W365Data) read_rooms() {
 			rglist = append(rglist, xr)
 		}
 	}
+	/*
+		for _, xr := range rglist {
+			subrooms := []int{}
+			for _, rgc := range strings.Split(xr.rg, LIST_SEP) {
+				subrooms = append(subrooms, w365data.NodeMap[rgc])
+			}
+			xr.room.SUBROOMS = subrooms
+			w365data.add_node("ROOMS", xr.room, xr.wid)
+		}
+	*/
+	w365data.room_group = map[string][]int{}
 	for _, xr := range rglist {
 		subrooms := []int{}
 		for _, rgc := range strings.Split(xr.rg, LIST_SEP) {
 			subrooms = append(subrooms, w365data.NodeMap[rgc])
 		}
-		xr.room.SUBROOMS = subrooms
-		w365data.add_node("ROOMS", xr.room, xr.wid)
+		w365data.room_group[xr.wid] = subrooms
 	}
 }

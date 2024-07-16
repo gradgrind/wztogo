@@ -92,6 +92,7 @@ type W365Data struct {
 	// These are only used temporarily:
 	tables0          map[string][]ItemType
 	yeartables       map[string][]ItemType
+	room_group       map[string][]int
 	group_classgroup map[int]wzbase.ClassGroup
 	class_group_div  map[int]map[int]int
 	absencemap       map[string]wzbase.Timeslot
