@@ -20,10 +20,10 @@ func getSubjects(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["SUBJECTS"]
 	items := []fetSubject{}
 	for _, ti := range trefs {
-		n := wzdb.NodeList[wzdb.IndexMap[ti]].Node
+		n := wzdb.GetNode(ti).(wzbase.Subject)
 		items = append(items, fetSubject{
-			Name:     n.(wzbase.Subject).ID,
-			Comments: n.(wzbase.Subject).NAME,
+			Name:     n.ID,
+			Comments: n.NAME,
 		})
 	}
 	data := fetSubjectsList{

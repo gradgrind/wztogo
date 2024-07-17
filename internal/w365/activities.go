@@ -85,7 +85,7 @@ func (w365data *W365Data) read_activities() {
 			log.Printf("\n=========================================\n"+
 				"  !!!  INVALID SUBJECT (%s) in Class/Group(s) %s\n"+
 				"=========================================\n",
-				stlist, cdglist.Print(w365data.NodeList),
+				stlist, cdglist.Print(w365data),
 			)
 			continue
 		}
@@ -135,7 +135,7 @@ func (w365data *W365Data) read_activities() {
 						log.Printf("\n=========================================\n"+
 							"  !!!  Room group in room choice list: %s (%s)\n"+
 							"=========================================\n",
-							cdglist.Print(w365data.NodeList), stlist,
+							cdglist.Print(w365data), stlist,
 						)
 						choices = choices[:0] // clear list
 						break
@@ -199,7 +199,7 @@ func (w365data *W365Data) read_activities() {
 				log.Printf("\n=========================================\n"+
 					"  !!!  EpochWeeks without block tag (%s) in Class/Group(s) %s\n"+
 					"=========================================\n",
-					sbj, cdglist.Print(w365data.NodeList),
+					sbj, cdglist.Print(w365data),
 				)
 			} else {
 				// Component of a named block.
@@ -207,7 +207,7 @@ func (w365data *W365Data) read_activities() {
 					sbj := w365data.NodeList[slist[0]].Node.(wzbase.Subject).ID
 					log.Fatalf("Class/Group %s: A course, subject %s,"+
 						" in block %s has both lessons and weeks",
-						cdglist.Print(w365data.NodeList), sbj, cat.Block)
+						cdglist.Print(w365data), sbj, cat.Block)
 				}
 			}
 			block_units, err = strconv.ParseFloat(epweeks, 32)
@@ -232,7 +232,7 @@ func (w365data *W365Data) read_activities() {
 						log.Fatalf("\n=========================================\n"+
 							"  !!!  'Epochenschiene' without 'NoReport': %s (%s)\n"+
 							"=========================================\n",
-							cdglist.Print(w365data.NodeList), stlist,
+							cdglist.Print(w365data), stlist,
 						)
 
 					}
@@ -321,7 +321,7 @@ func (w365data *W365Data) read_activities() {
 				// Add this course's groups to blockgroups.
 				if !blockgroups.AddCourseGroups(w365data.NodeList, groups) {
 					log.Fatalf("Incompatible group in course %s\n",
-						course.Print(w365data.NodeList))
+						course.Print(w365data))
 				}
 			} else {
 				// Check that this course's groups are a subset of basegroups
@@ -331,12 +331,12 @@ func (w365data *W365Data) read_activities() {
 						// Full class not included, check groups
 						if cdg.Div == -1 {
 							log.Fatalf("Course class not in block groups: %s\n",
-								course.Print(w365data.NodeList))
+								course.Print(w365data))
 						} else {
 							for _, g := range cdg.Groups {
 								if !bgmap[g] {
 									log.Fatalf("Course group not subset of block groups: %s\n",
-										course.Print(w365data.NodeList))
+										course.Print(w365data))
 								}
 							}
 						}
@@ -369,7 +369,7 @@ func (w365data *W365Data) read_activities() {
 			// choices in the base course.
 			if len(course.ROOM_WISH.Choices) != 0 {
 				log.Printf("Block course, room choices will be ignored: %s\n",
-					course.Print(w365data.NodeList))
+					course.Print(w365data))
 			}
 			// An empty room field is ignored here.
 		}
@@ -388,7 +388,7 @@ func (w365data *W365Data) read_activities() {
 			if len(txlist) > 0 {
 				log.Printf("Block course, added teachers: %s\n  to %s\n",
 					strings.Join(txlist, ","),
-					basecourse.Print(w365data.NodeList))
+					basecourse.Print(w365data))
 			}
 		}
 		if len(baserooms.Choices) == 1 {

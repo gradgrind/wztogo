@@ -74,8 +74,8 @@ func getDays(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["DAYS"]
 	days := []fetDay{}
 	for _, ti := range trefs {
-		n := wzdb.NodeList[wzdb.IndexMap[ti]].Node
-		days = append(days, fetDay{Name: n.(wzbase.Day).ID})
+		n := wzdb.GetNode(ti).(wzbase.Day)
+		days = append(days, fetDay{Name: n.ID})
 	}
 	data := fetDaysList{
 		Number_of_Days: len(trefs),
@@ -88,8 +88,8 @@ func getHours(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["HOURS"]
 	hours := []fetHour{}
 	for _, ti := range trefs {
-		n := wzdb.NodeList[wzdb.IndexMap[ti]].Node
-		hours = append(hours, fetHour{Name: n.(wzbase.Hour).ID})
+		n := wzdb.GetNode(ti).(wzbase.Hour)
+		hours = append(hours, fetHour{Name: n.ID})
 	}
 	data := fetHoursList{
 		Number_of_Hours: len(trefs),

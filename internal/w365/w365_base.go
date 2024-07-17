@@ -99,6 +99,10 @@ type W365Data struct {
 	categorymap      map[string]Category
 }
 
+func (wzdb W365Data) GetNode(ref int) interface{} {
+	return wzdb.NodeList[ref].Node
+}
+
 type YearData struct {
 	Tag         string
 	Name        string

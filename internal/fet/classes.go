@@ -53,7 +53,7 @@ func getClasses(wzdb *wzbase.WZdata) string {
 	for _, c := range wzdb.TableMap["CLASSES"] {
 		//    for _, ti := range trefs {
 		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
-		cl := wzdb.NodeList[wzdb.IndexMap[c]].Node.(wzbase.Class)
+		cl := wzdb.GetNode(c).(wzbase.Class)
 		cgs := wzdb.AtomicGroups.Class_Groups[c]
 		agmap := wzdb.AtomicGroups.Group_Atomics
 		cags := agmap[wzbase.ClassGroup{
@@ -71,7 +71,7 @@ func getClasses(wzdb *wzbase.WZdata) string {
 		groups := []fetGroup{}
 		if cags.GetCardinality() > 1 {
 			for _, cg := range cgs {
-				g := wzdb.NodeList[cg.GIX].Node.(wzbase.Group).ID
+				g := wzdb.GetNode(cg.GIX).(wzbase.Group).ID
 				gags := agmap[cg]
 
 				subgroups := []fetSubgroup{}

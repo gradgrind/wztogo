@@ -8,15 +8,15 @@ import (
 // func getCourses(wzdb *wzbase.WZdata, divisions []wzbase.DivGroups) string {
 func getCourses(wzdb *wzbase.WZdata) string {
 	for _, bi := range wzdb.TableMap["BLOCKS"] {
-		bnode := wzdb.NodeList[wzdb.IndexMap[bi]].Node.(wzbase.Block)
-		bbnode := wzdb.NodeList[wzdb.IndexMap[bnode.Base]].Node.(wzbase.Course)
+		bnode := wzdb.GetNode(bi).(wzbase.Block)
+		bbnode := wzdb.GetNode(bnode.Base).(wzbase.Course)
 		fmt.Printf("* Block %+v\n+ Base %+v\n", bnode, bbnode)
 		// The block groups are at bnode.BlockGroups.
 
 		for _, bci := range bnode.Components {
-			bcnode := wzdb.NodeList[wzdb.IndexMap[bci]].Node.(wzbase.Course)
+			bcnode := wzdb.GetNode(bci).(wzbase.Course)
 			fmt.Printf(" - Block %s Group(s) %s\n",
-				bnode.Tag, bcnode.GROUPS.Print(wzdb.NodeList),
+				bnode.Tag, bcnode.GROUPS.Print(wzdb),
 			)
 		}
 	}

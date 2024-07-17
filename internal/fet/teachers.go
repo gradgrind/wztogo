@@ -21,12 +21,12 @@ func getTeachers(wzdb *wzbase.WZdata) string {
 	trefs := wzdb.TableMap["TEACHERS"]
 	items := []fetTeacher{}
 	for _, ti := range trefs {
-		n := wzdb.NodeList[wzdb.IndexMap[ti]].Node
+		n := wzdb.GetNode(ti).(wzbase.Teacher)
 		items = append(items, fetTeacher{
-			Name: n.(wzbase.Teacher).ID,
+			Name: n.ID,
 			Comments: fmt.Sprintf("%s %s",
-				n.(wzbase.Teacher).FIRSTNAMES,
-				n.(wzbase.Teacher).LASTNAME,
+				n.FIRSTNAMES,
+				n.LASTNAME,
 			),
 			//<Target_Number_of_Hours>0</Target_Number_of_Hours>
 			//<Qualified_Subjects></Qualified_Subjects>

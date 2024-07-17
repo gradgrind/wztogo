@@ -323,7 +323,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 							"Active group (%s) not in class division: %+v",
 							wzbase.ClassGroup{
 								CIX: nc, GIX: g,
-							}.Print(db365.NodeList), node,
+							}.Print(db365), node,
 						)
 					}
 					agdivs = append(agdivs, div.Groups)
@@ -332,7 +332,7 @@ CREATE TABLE IF NOT EXISTS NODES(
 							log.Printf("Group %s has no activities\n",
 								wzbase.ClassGroup{
 									CIX: nc, GIX: g,
-								}.Print(db365.NodeList),
+								}.Print(db365),
 							)
 						}
 					}

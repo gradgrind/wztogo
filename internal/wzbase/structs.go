@@ -98,11 +98,23 @@ type ClassDivGroups struct {
 
 type CourseGroups []ClassDivGroups
 
-func (cgs CourseGroups) Print(nodelist []WZnode) string {
+/*
+	func (cgs CourseGroups) Print(nodelist []WZnode) string {
+		gnlist := []string{}
+		for _, cdgs := range cgs {
+			for _, g := range cdgs.Groups {
+				gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(nodelist))
+			}
+		}
+		return strings.Join(gnlist, ",")
+	}
+*/
+
+func (cgs CourseGroups) Print(ng NodeGetter) string {
 	gnlist := []string{}
 	for _, cdgs := range cgs {
 		for _, g := range cdgs.Groups {
-			gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(nodelist))
+			gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(ng))
 		}
 	}
 	return strings.Join(gnlist, ",")
@@ -171,12 +183,23 @@ type ClassGroup struct {
 	GIX int
 }
 
+/*
 func (cg ClassGroup) Print(nodelist []WZnode) string {
 	c := nodelist[cg.CIX].Node.(Class)
 	if cg.GIX == 0 {
 		return c.ID
 	}
 	g := nodelist[cg.GIX].Node.(Group)
+	return fmt.Sprintf("%s.%s", c.ID, g.ID)
+}
+*/
+
+func (cg ClassGroup) Print(ng NodeGetter) string {
+	c := ng.GetNode(cg.CIX).(Class)
+	if cg.GIX == 0 {
+		return c.ID
+	}
+	g := ng.GetNode(cg.GIX).(Group)
 	return fmt.Sprintf("%s.%s", c.ID, g.ID)
 }
 
@@ -192,12 +215,24 @@ type Course struct {
 	FLAGS           map[string]bool
 }
 
+/*
 func (c Course) Print(nodelist []WZnode) string {
 	g := c.GROUPS.Print(nodelist)
 	s := nodelist[c.SUBJECT].Node.(Subject).ID
 	tl := []string{}
 	for _, ti := range c.TEACHERS {
 		tl = append(tl, nodelist[ti].Node.(Teacher).ID)
+	}
+	return fmt.Sprintf("<%s-%s-%s>", g, s, strings.Join(tl, ","))
+}
+*/
+
+func (c Course) Print(ng NodeGetter) string {
+	g := c.GROUPS.Print(ng)
+	s := ng.GetNode(c.SUBJECT).(Subject).ID
+	tl := []string{}
+	for _, ti := range c.TEACHERS {
+		tl = append(tl, ng.GetNode(ti).(Teacher).ID)
 	}
 	return fmt.Sprintf("<%s-%s-%s>", g, s, strings.Join(tl, ","))
 }
@@ -250,4 +285,12 @@ type WZdata struct {
 	GroupClassgroup map[int]ClassGroup // map group/class index to ClassGroup
 	ActiveDivisions map[int][][]int
 	AtomicGroups    AtomicGroups
+}
+
+func (wzdb WZdata) GetNode(ref int) interface{} {
+	return wzdb.NodeList[wzdb.IndexMap[ref]].Node
+}
+
+type NodeGetter interface {
+	GetNode(ref int) interface{}
 }
