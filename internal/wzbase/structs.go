@@ -203,6 +203,15 @@ func (cg ClassGroup) Print(ng NodeGetter) string {
 	return fmt.Sprintf("%s.%s", c.ID, g.ID)
 }
 
+func (cg ClassGroup) Printx(ng NodeGetter) string {
+	c := ng.GetNode(cg.CIX).(Class)
+	if cg.GIX == 0 {
+		return c.SORTING
+	}
+	g := ng.GetNode(cg.GIX).(Group)
+	return fmt.Sprintf("%s.%s", c.SORTING, g.ID)
+}
+
 type Course struct {
 	TEACHERS        []int
 	GROUPS          CourseGroups
