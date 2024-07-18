@@ -17,7 +17,7 @@ type fetTeachersList struct {
 	Teacher []fetTeacher
 }
 
-func getTeachers(wzdb *wzbase.WZdata) string {
+func getTeachers(wzdb *wzbase.WZdata) fetTeachersList {
 	trefs := wzdb.TableMap["TEACHERS"]
 	items := []fetTeacher{}
 	for _, ti := range trefs {
@@ -32,8 +32,7 @@ func getTeachers(wzdb *wzbase.WZdata) string {
 			//<Qualified_Subjects></Qualified_Subjects>
 		})
 	}
-	data := fetTeachersList{
+	return fetTeachersList{
 		Teacher: items,
 	}
-	return string(makeXML(data, 0))
 }

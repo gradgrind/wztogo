@@ -47,7 +47,7 @@ type fetStudentsList struct {
 // Note that any class divisions with no actual lessons should not appear
 // in the atomic groups. This is handled before calling this function so
 // that wzdb.AtomicGroups covers only these "active" divisions.
-func getClasses(wzdb *wzbase.WZdata) string {
+func getClasses(wzdb *wzbase.WZdata) fetStudentsList {
 	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
 	for _, c := range wzdb.TableMap["CLASSES"] {
@@ -102,8 +102,7 @@ func getClasses(wzdb *wzbase.WZdata) string {
 		*/
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 	}
-	data := fetStudentsList{
+	return fetStudentsList{
 		Year: items,
 	}
-	return string(makeXML(data, 0))
 }

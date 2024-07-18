@@ -3,6 +3,9 @@ package fet
 import (
 	"fmt"
 	"gradgrind/wztogo/internal/w365"
+	"log"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -66,18 +69,26 @@ func TestFet(t *testing.T) {
 	//return
 
 	//fmt.Printf("\nINPUT: %+v\n", wzdb)
-	xmlitem := getDays(&wzdb)
+	//xmlitem := getDays(&wzdb)
+	//fmt.Printf("\n*** fet:\n%v\n", xmlitem)
+
+	xmlitem := make_fet_file(wzdb)
 	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	xmlitem = getHours(&wzdb)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	xmlitem = getSubjects(&wzdb)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	xmlitem = getTeachers(&wzdb)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	xmlitem = getClasses(&wzdb)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	xmlitem = getCourses(&wzdb)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
+	fetfile0 := "../_testdata/test.fet"
+	fetfile, err := filepath.Abs(fetfile0)
+	if err != nil {
+		log.Fatalf("Couldn't resolve file path: %s\n", fetfile0)
+	}
+	f, err := os.Create(fetfile)
+	if err != nil {
+		log.Fatalf("Couldn't open output file: %s\n", fetfile)
+	}
+	defer f.Close()
+	_, err = f.WriteString(xmlitem)
+	if err != nil {
+		log.Fatalf("Couldn't write fet output to: %s\n", fetfile)
+	}
+	log.Printf("\nFET file written to: %s\n", fetfile)
 
 	/*
 		cg0 := wzbase.CourseGroups{}

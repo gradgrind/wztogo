@@ -23,7 +23,7 @@ type fetActivitiesList struct {
 	Activity []fetActivity
 }
 
-func getCourses(wzdb *wzbase.WZdata) string {
+func getCourses(wzdb *wzbase.WZdata) fetActivitiesList {
 	type cdata struct {
 		lessons      []int
 		teachers     []int
@@ -125,8 +125,7 @@ func getCourses(wzdb *wzbase.WZdata) string {
 			//TODO: subject mappings
 		}
 	}
-	data := fetActivitiesList{
+	return fetActivitiesList{
 		Activity: items,
 	}
-	return string(makeXML(data, 0))
 }

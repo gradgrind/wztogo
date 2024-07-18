@@ -70,30 +70,29 @@ func readDays() {
 }
 */
 
-func getDays(wzdb *wzbase.WZdata) string {
+// func getDays(wzdb *wzbase.WZdata) string {
+func getDays(wzdb *wzbase.WZdata) fetDaysList {
 	trefs := wzdb.TableMap["DAYS"]
 	days := []fetDay{}
 	for _, ti := range trefs {
 		n := wzdb.GetNode(ti).(wzbase.Day)
 		days = append(days, fetDay{Name: n.ID})
 	}
-	data := fetDaysList{
+	return fetDaysList{
 		Number_of_Days: len(trefs),
 		Day:            days,
 	}
-	return string(makeXML(data, 0))
 }
 
-func getHours(wzdb *wzbase.WZdata) string {
+func getHours(wzdb *wzbase.WZdata) fetHoursList {
 	trefs := wzdb.TableMap["HOURS"]
 	hours := []fetHour{}
 	for _, ti := range trefs {
 		n := wzdb.GetNode(ti).(wzbase.Hour)
 		hours = append(hours, fetHour{Name: n.ID})
 	}
-	data := fetHoursList{
+	return fetHoursList{
 		Number_of_Hours: len(trefs),
 		Day:             hours,
 	}
-	return string(makeXML(data, 0))
 }

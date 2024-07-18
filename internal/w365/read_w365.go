@@ -184,12 +184,13 @@ func (w365data *W365Data) ReadYear(year string) {
 	}
 	w365data.yeartables = yeartables
 	w365data.Yeardata = map[string]interface{}{
-		"YEAR":        year_data.Tag,
-		"SCHOOLYEAR":  year_data.Name,
-		"DATE_Start":  year_data.DATE_Start,
-		"DATE_End":    year_data.DATE_End,
-		"EpochFactor": year_data.EpochFactor,
-		"LastChanged": year_data.LastChanged,
+		"YEAR":            year_data.Tag,
+		"SCHOOLYEAR":      year_data.Name,
+		"DATE_Start":      year_data.DATE_Start,
+		"DATE_End":        year_data.DATE_End,
+		"EpochFactor":     year_data.EpochFactor,
+		"LastChanged":     year_data.LastChanged,
+		"SourceReference": containerId,
 	}
 	//TODO--
 	fmt.Printf("\n §§§§§§§§§§§§§§§§§§§§§§§\n %+v\n §§§§§§§§§§§§§§§§§§§§§§§\n",

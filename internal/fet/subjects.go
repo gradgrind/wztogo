@@ -16,7 +16,7 @@ type fetSubjectsList struct {
 	Subject []fetSubject
 }
 
-func getSubjects(wzdb *wzbase.WZdata) string {
+func getSubjects(wzdb *wzbase.WZdata) fetSubjectsList {
 	trefs := wzdb.TableMap["SUBJECTS"]
 	items := []fetSubject{}
 	for _, ti := range trefs {
@@ -26,8 +26,7 @@ func getSubjects(wzdb *wzbase.WZdata) string {
 			Comments: n.NAME,
 		})
 	}
-	data := fetSubjectsList{
+	return fetSubjectsList{
 		Subject: items,
 	}
-	return string(makeXML(data, 0))
 }
