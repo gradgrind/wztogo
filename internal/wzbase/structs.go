@@ -278,13 +278,14 @@ type WZDB struct { // for the NODES table in the sqlite database
 // of each "table" ("DB_TABLE" field, not a table within the sqlite
 // database).
 type WZdata struct {
-	Schooldata      map[string]interface{}
-	NodeList        []WZnode           // all the db rows
-	IndexMap        map[int]int        // map reference to NodeList index
-	TableMap        map[string][]int   // map table name to list of references
-	GroupClassgroup map[int]ClassGroup // map group/class index to ClassGroup
-	ActiveDivisions map[int][][]int
-	AtomicGroups    AtomicGroups
+	Schooldata       map[string]interface{}
+	NodeList         []WZnode           // all the db rows
+	IndexMap         map[int]int        // map reference to NodeList index
+	TableMap         map[string][]int   // map table name to list of references
+	GroupClassgroup  map[int]ClassGroup // map group/class index to ClassGroup
+	ActiveDivisions  map[int][][]int
+	AtomicGroups     AtomicGroups
+	SourceReferences map[int]string
 }
 
 func (wzdb WZdata) GetNode(ref int) interface{} {

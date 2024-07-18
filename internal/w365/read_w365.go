@@ -356,6 +356,13 @@ CREATE TABLE IF NOT EXISTS NODES(
 		}])
 		fmt.Println("  ****************************************")
 	*/
+
+	// Build a mapping from the reference (index/primary key) back to the
+	// Waldorf 365 node Id, where possible.
+	ref2key := make(map[int]string, len(db365.NodeMap))
+	for k, v := range db365.NodeMap {
+		ref2key[v] = k
+	}
 	return wzbase.WZdata{
 		Schooldata: sdata,
 		NodeList:   db365.NodeList,
@@ -363,8 +370,9 @@ CREATE TABLE IF NOT EXISTS NODES(
 		TableMap:   db365.TableMap,
 		// GroupDiv:     db365.GroupDiv,
 		// AtomicGroups: db365.AtomicGroups,
-		GroupClassgroup: db365.group_classgroup,
-		ActiveDivisions: cagdivs,
-		AtomicGroups:    ag,
+		GroupClassgroup:  db365.group_classgroup,
+		ActiveDivisions:  cagdivs,
+		AtomicGroups:     ag,
+		SourceReferences: ref2key,
 	}
 }
