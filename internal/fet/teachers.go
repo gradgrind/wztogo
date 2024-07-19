@@ -17,11 +17,11 @@ type fetTeachersList struct {
 	Teacher []fetTeacher
 }
 
-func getTeachers(wzdb *wzbase.WZdata) fetTeachersList {
-	trefs := wzdb.TableMap["TEACHERS"]
+func getTeachers(fetinfo *fetInfo) {
+	trefs := fetinfo.wzdb.TableMap["TEACHERS"]
 	items := []fetTeacher{}
 	for _, ti := range trefs {
-		n := wzdb.GetNode(ti).(wzbase.Teacher)
+		n := fetinfo.wzdb.GetNode(ti).(wzbase.Teacher)
 		items = append(items, fetTeacher{
 			Name: n.ID,
 			Comments: fmt.Sprintf("%s %s",
@@ -32,7 +32,7 @@ func getTeachers(wzdb *wzbase.WZdata) fetTeachersList {
 			//<Qualified_Subjects></Qualified_Subjects>
 		})
 	}
-	return fetTeachersList{
+	fetinfo.fetdata.Teachers_List = fetTeachersList{
 		Teacher: items,
 	}
 }

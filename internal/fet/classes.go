@@ -44,18 +44,34 @@ type fetStudentsList struct {
 	Year    []fetClass
 }
 
+type notAvailableTime struct {
+	XMLName xml.Name `xml:"Not_Available_Time"`
+	Day     string
+	Hour    string
+}
+
+type studentsNotAvailable struct {
+	XMLName                       xml.Name `xml:"ConstraintStudentsSetNotAvailableTimes"`
+	Weight_Percentage             int
+	Students                      string
+	Number_of_Not_Available_Times int
+	Not_Available_Time            []notAvailableTime
+	Active                        bool
+}
+
 // Note that any class divisions with no actual lessons should not appear
 // in the atomic groups. This is handled before calling this function so
 // that wzdb.AtomicGroups covers only these "active" divisions.
-func getClasses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetStudentsList {
+func getClasses(fetinfo *fetInfo) {
 	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
-	for _, c := range wzdb.TableMap["CLASSES"] {
+	natimes := []studentsNotAvailable{}
+	for _, c := range fetinfo.wzdb.TableMap["CLASSES"] {
 		//    for _, ti := range trefs {
 		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
-		cl := wzdb.GetNode(c).(wzbase.Class)
-		cgs := wzdb.AtomicGroups.Class_Groups[c]
-		agmap := wzdb.AtomicGroups.Group_Atomics
+		cl := fetinfo.wzdb.GetNode(c).(wzbase.Class)
+		cgs := fetinfo.wzdb.AtomicGroups.Class_Groups[c]
+		agmap := fetinfo.wzdb.AtomicGroups.Group_Atomics
 		cags := agmap[wzbase.ClassGroup{
 			CIX: c, GIX: 0,
 		}]
@@ -71,7 +87,7 @@ func getClasses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetStudentsList {
 		groups := []fetGroup{}
 		if cags.GetCardinality() > 1 {
 			for _, cg := range cgs {
-				g := ref2fet[cg.GIX]
+				g := fetinfo.ref2fet[cg.GIX]
 				gags := agmap[cg]
 				subgroups := []fetSubgroup{}
 				for _, ag := range gags.ToArray() {
@@ -100,8 +116,30 @@ func getClasses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetStudentsList {
 			})
 		*/
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
+
+		// "Not available" times
+		nats := []notAvailableTime{}
+		for d, dna := range cl.NOT_AVAILABLE {
+			for _, h := range dna {
+				nats = append(nats,
+					notAvailableTime{
+						Day: fetinfo.days[d], Hour: fetinfo.hours[h]})
+			}
+		}
+		if len(nats) > 0 {
+			natimes = append(natimes,
+				studentsNotAvailable{
+					Weight_Percentage:             100,
+					Students:                      cname,
+					Number_of_Not_Available_Times: len(nats),
+					Not_Available_Time:            nats,
+					Active:                        true,
+				})
+		}
+		//fmt.Printf("==== %s: %+v\n", cname, nats)
 	}
-	return fetStudentsList{
+	fetinfo.fetdata.Students_List = fetStudentsList{
 		Year: items,
 	}
+	fetinfo.fetdata.Time_Constraints_List.ConstraintStudentsSetNotAvailableTimes = natimes
 }

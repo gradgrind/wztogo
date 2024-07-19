@@ -47,6 +47,8 @@ func (w365data *W365Data) absences(item ItemType) []([]int) {
 					return -1
 				}
 				if a.Hour == b.Hour {
+					log.Printf("TIMESLOT! %+v // %+v\n", a, b)
+					log.Fatalf("  ++ %+v\n", item)
 					return 0
 				}
 			}

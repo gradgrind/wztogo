@@ -36,30 +36,40 @@ type fet struct {
 	//Buildings_List
 	//TODO:
 	//	Rooms_List fetRoomsList
-	Activities_List fetActivitiesList
-	//TODO ...
-	/*
-			<Time_Constraints_List>
-		    <ConstraintBasicCompulsoryTime>
-		      <Weight_Percentage>100</Weight_Percentage>
-		      <Active>true</Active>
-		      <Comments></Comments>
-		    </ConstraintBasicCompulsoryTime>
+	Activities_List        fetActivitiesList
+	Time_Constraints_List  timeConstraints
+	Space_Constraints_List spaceConstraints
+}
 
-			...
+type fetInfo struct {
+	wzdb    *wzbase.WZdata
+	ref2fet map[int]string
+	days    []string
+	hours   []string
+	fetdata fet
+}
 
-			</Time_Constraints_List>
-		    <Space_Constraints_List>
-		    <ConstraintBasicCompulsorySpace>
-		      <Weight_Percentage>100</Weight_Percentage>
-		      <Active>true</Active>
-		      <Comments></Comments>
-		    </ConstraintBasicCompulsorySpace>
+type timeConstraints struct {
+	XMLName                                xml.Name `xml:"Time_Constraints_List"`
+	ConstraintBasicCompulsoryTime          basicTimeConstraint
+	ConstraintStudentsSetNotAvailableTimes []studentsNotAvailable
+}
 
-			...
+type basicTimeConstraint struct {
+	XMLName           xml.Name `xml:"ConstraintBasicCompulsoryTime"`
+	Weight_Percentage int
+	Active            bool
+}
 
-		    </Space_Constraints_List>
-	*/
+type spaceConstraints struct {
+	XMLName                        xml.Name `xml:"Space_Constraints_List"`
+	ConstraintBasicCompulsorySpace basicSpaceConstraint
+}
+
+type basicSpaceConstraint struct {
+	XMLName           xml.Name `xml:"ConstraintBasicCompulsorySpace"`
+	Weight_Percentage int
+	Active            bool
 }
 
 func make_fet_file(wzdb wzbase.WZdata) string {
@@ -92,17 +102,34 @@ func make_fet_file(wzdb wzbase.WZdata) string {
 		}
 		ref2fet[ref] = v
 	}
-	fetdata := fet{
-		Version:          fet_version,
-		Mode:             "Official",
-		Institution_Name: wzdb.Schooldata["SchoolName"].(string),
-		Comments:         wzdb.Schooldata["SourceReference"].(string),
-		Days_List:        getDays(ref2fet, wzdb.TableMap["DAYS"]),
-		Hours_List:       getHours(ref2fet, wzdb.TableMap["HOURS"]),
-		Teachers_List:    getTeachers(&wzdb),
-		Subjects_List:    getSubjects(&wzdb),
-		Students_List:    getClasses(&wzdb, ref2fet),
-		Activities_List:  getCourses(&wzdb, ref2fet),
+	fetinfo := fetInfo{
+		wzdb:    &wzdb,
+		ref2fet: ref2fet,
+		fetdata: fet{
+			Version:          fet_version,
+			Mode:             "Official",
+			Institution_Name: wzdb.Schooldata["SchoolName"].(string),
+			Comments:         wzdb.Schooldata["SourceReference"].(string),
+			Time_Constraints_List: timeConstraints{
+				ConstraintBasicCompulsoryTime: basicTimeConstraint{
+					Weight_Percentage: 100, Active: true},
+			},
+			Space_Constraints_List: spaceConstraints{
+				ConstraintBasicCompulsorySpace: basicSpaceConstraint{
+					Weight_Percentage: 100, Active: true},
+			},
+		},
 	}
-	return xml.Header + makeXML(fetdata, 0)
+
+	//	fetdata.Time_Constraints_List.constraints = append(
+	//		fetdata.Time_Constraints_List.constraints,
+	//		basicTimeConstraint{Weight_Percentage: 100, Active: true},
+	//	)
+	getDays(&fetinfo)
+	getHours(&fetinfo)
+	getTeachers(&fetinfo)
+	getSubjects(&fetinfo)
+	getClasses(&fetinfo)
+	getCourses(&fetinfo)
+	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }

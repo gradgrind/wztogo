@@ -69,25 +69,32 @@ func readDays() {
 }
 */
 
-// func getDays(wzdb *wzbase.WZdata) string {
-func getDays(ref2fet map[int]string, trefs []int) fetDaysList {
+func getDays(fetinfo *fetInfo) {
 	days := []fetDay{}
-	for _, ti := range trefs {
-		days = append(days, fetDay{Name: ref2fet[ti]})
+	dlist := []string{}
+	for _, ti := range fetinfo.wzdb.TableMap["DAYS"] {
+		d := fetinfo.ref2fet[ti]
+		days = append(days, fetDay{Name: d})
+		dlist = append(dlist, d)
 	}
-	return fetDaysList{
-		Number_of_Days: len(trefs),
+	fetinfo.days = dlist
+	fetinfo.fetdata.Days_List = fetDaysList{
+		Number_of_Days: len(days),
 		Day:            days,
 	}
 }
 
-func getHours(ref2fet map[int]string, trefs []int) fetHoursList {
+func getHours(fetinfo *fetInfo) {
 	hours := []fetHour{}
-	for _, ti := range trefs {
-		hours = append(hours, fetHour{Name: ref2fet[ti]})
+	hlist := []string{}
+	for _, ti := range fetinfo.wzdb.TableMap["HOURS"] {
+		h := fetinfo.ref2fet[ti]
+		hours = append(hours, fetHour{Name: h})
+		hlist = append(hlist, h)
 	}
-	return fetHoursList{
-		Number_of_Hours: len(trefs),
+	fetinfo.hours = hlist
+	fetinfo.fetdata.Hours_List = fetHoursList{
+		Number_of_Hours: len(hours),
 		Day:             hours,
 	}
 }

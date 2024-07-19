@@ -16,17 +16,17 @@ type fetSubjectsList struct {
 	Subject []fetSubject
 }
 
-func getSubjects(wzdb *wzbase.WZdata) fetSubjectsList {
-	trefs := wzdb.TableMap["SUBJECTS"]
+func getSubjects(fetinfo *fetInfo) {
+	trefs := fetinfo.wzdb.TableMap["SUBJECTS"]
 	items := []fetSubject{}
 	for _, ti := range trefs {
-		n := wzdb.GetNode(ti).(wzbase.Subject)
+		n := fetinfo.wzdb.GetNode(ti).(wzbase.Subject)
 		items = append(items, fetSubject{
 			Name:     n.ID,
 			Comments: n.NAME,
 		})
 	}
-	return fetSubjectsList{
+	fetinfo.fetdata.Subjects_List = fetSubjectsList{
 		Subject: items,
 	}
 }

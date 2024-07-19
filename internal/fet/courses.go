@@ -23,7 +23,7 @@ type fetActivitiesList struct {
 	Activity []fetActivity
 }
 
-func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
+func getCourses(fetinfo *fetInfo) {
 	type cdata struct {
 		lessons      []int
 		teachers     []int
@@ -34,11 +34,11 @@ func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 	courses := []cdata{}
 	// Go through the blocks first.
 	block_courses := map[int]bool{} // collect courses connected with blocks
-	for _, bi := range wzdb.TableMap["BLOCKS"] {
-		bnode := wzdb.GetNode(bi).(wzbase.Block)
+	for _, bi := range fetinfo.wzdb.TableMap["BLOCKS"] {
+		bnode := fetinfo.wzdb.GetNode(bi).(wzbase.Block)
 		ci := bnode.Base
 		block_courses[ci] = true
-		n := wzdb.GetNode(ci).(wzbase.Course)
+		n := fetinfo.wzdb.GetNode(ci).(wzbase.Course)
 		for _, bci := range bnode.Components {
 			block_courses[bci] = true
 		}
@@ -54,11 +54,11 @@ func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 		})
 	}
 	// Add the other courses.
-	for _, ci := range wzdb.TableMap["COURSES"] {
+	for _, ci := range fetinfo.wzdb.TableMap["COURSES"] {
 		if block_courses[ci] {
 			continue
 		} // blocks already handled
-		n := wzdb.GetNode(ci).(wzbase.Course)
+		n := fetinfo.wzdb.GetNode(ci).(wzbase.Course)
 		if len(n.LESSONS) == 0 {
 			continue
 		}
@@ -77,20 +77,20 @@ func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range course.teachers {
-			tlist = append(tlist, ref2fet[ti])
+			tlist = append(tlist, fetinfo.ref2fet[ti])
 		}
 		// Subject
-		sbj := ref2fet[course.subject]
+		sbj := fetinfo.ref2fet[course.subject]
 		// Groups
 		glist := []string{}
 		for _, cg := range course.students {
-			c := ref2fet[cg.Class]
+			c := fetinfo.ref2fet[cg.Class]
 			if cg.Div < 0 {
 				glist = append(glist, c)
 			} else {
 				for _, g := range cg.Groups {
 					glist = append(glist,
-						c+"."+ref2fet[g],
+						c+"."+fetinfo.ref2fet[g],
 					)
 				}
 			}
@@ -104,7 +104,7 @@ func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 		if len(course.lessons) > 1 {
 			aid = id + 1
 		}
-		source_ref := wzdb.SourceReferences[course.course_index]
+		source_ref := fetinfo.wzdb.SourceReferences[course.course_index]
 		for _, l := range course.lessons {
 			id++
 			items = append(items, fetActivity{
@@ -123,7 +123,7 @@ func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 			//TODO: subject mappings
 		}
 	}
-	return fetActivitiesList{
+	fetinfo.fetdata.Activities_List = fetActivitiesList{
 		Activity: items,
 	}
 }
