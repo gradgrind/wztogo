@@ -47,7 +47,7 @@ type fetStudentsList struct {
 // Note that any class divisions with no actual lessons should not appear
 // in the atomic groups. This is handled before calling this function so
 // that wzdb.AtomicGroups covers only these "active" divisions.
-func getClasses(wzdb *wzbase.WZdata) fetStudentsList {
+func getClasses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetStudentsList {
 	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
 	for _, c := range wzdb.TableMap["CLASSES"] {
@@ -66,14 +66,13 @@ func getClasses(wzdb *wzbase.WZdata) fetStudentsList {
 		//if cags.GetCardinality() > 1 {
 		//	nc = 1
 		//}
-		cname := cl.SORTING //?
-		calt := cl.ID       //?
+		//calt := cl.SORTING //?
+		cname := cl.ID
 		groups := []fetGroup{}
 		if cags.GetCardinality() > 1 {
 			for _, cg := range cgs {
-				g := wzdb.GetNode(cg.GIX).(wzbase.Group).ID
+				g := ref2fet[cg.GIX]
 				gags := agmap[cg]
-
 				subgroups := []fetSubgroup{}
 				for _, ag := range gags.ToArray() {
 					subgroups = append(subgroups,
@@ -88,9 +87,9 @@ func getClasses(wzdb *wzbase.WZdata) fetStudentsList {
 			}
 		}
 		items = append(items, fetClass{
-			Name:     cname,
-			Comments: calt,
-			Group:    groups,
+			Name: cname,
+			//Comments: calt,
+			Group: groups,
 		})
 		/*
 			items = append(items, fetClass{

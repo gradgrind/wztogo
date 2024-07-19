@@ -23,7 +23,7 @@ type fetActivitiesList struct {
 	Activity []fetActivity
 }
 
-func getCourses(wzdb *wzbase.WZdata) fetActivitiesList {
+func getCourses(wzdb *wzbase.WZdata, ref2fet map[int]string) fetActivitiesList {
 	type cdata struct {
 		lessons      []int
 		teachers     []int
@@ -77,22 +77,20 @@ func getCourses(wzdb *wzbase.WZdata) fetActivitiesList {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range course.teachers {
-			tlist = append(tlist, wzdb.GetNode(ti).(wzbase.Teacher).ID)
+			tlist = append(tlist, ref2fet[ti])
 		}
 		// Subject
-		sbj := wzdb.GetNode(course.subject).(wzbase.Subject).ID
+		sbj := ref2fet[course.subject]
 		// Groups
 		glist := []string{}
 		for _, cg := range course.students {
-			c := cg.Class
+			c := ref2fet[cg.Class]
 			if cg.Div < 0 {
-				glist = append(glist,
-					wzbase.ClassGroup{CIX: c, GIX: 0}.Printx(wzdb),
-				)
+				glist = append(glist, c)
 			} else {
 				for _, g := range cg.Groups {
 					glist = append(glist,
-						wzbase.ClassGroup{CIX: c, GIX: g}.Printx(wzdb),
+						c+"."+ref2fet[g],
 					)
 				}
 			}
