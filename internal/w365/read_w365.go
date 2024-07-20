@@ -220,6 +220,20 @@ func convert_colour(colour string) string {
 // ************ Tying it together ************
 
 // Read the data from the given file for the "active" year.
+// Within various elements there can be references to other elements. These
+// are generally saved as integers corresponding to the primary keys of the
+// referenced elements within the generated database.
+// The internal data structure which is produced uses a (potentially)
+// different indexing. All elements ("nodes") are held in a vector, NodeList.
+// There is a mapping, IndexMap, which maps the primary-key-references to the
+// indexes within NodeList.
+// Note that "days" and "hours", which also have nodes within NodeList are
+// handled differently. They are referenced by 0-based indexes because of
+// the high significance of their ordering. For many purposes, no other
+// information about these elements will be required, but if it is, appropriate
+// maps can be generated – the entries in the lists TableMap["DAYS"] and
+// TableMap["HOURS"] are correctly ordered (the values are normal primary-key
+// references).
 func ReadW365(w365file string) wzbase.WZdata {
 	db365 := ReadW365Raw(w365file)
 	//TODO: Might one want to select a different year?
@@ -241,10 +255,7 @@ func ReadW365(w365file string) wzbase.WZdata {
 	// At least the initialized activities should be added to the
 	// database. Here all activities (including uninitialized ones) are
 	// added as a "lesson plan", named as the w365 schedule.
-	entry := struct {
-		ID      string
-		LESSONS []wzbase.Lesson
-	}{plan_name, c_l}
+	entry := wzbase.LessonPlan{ID: plan_name, LESSONS: c_l}
 	db365.add_node("LESSON_PLANS", entry, "")
 	// Save data to (new) sqlite file
 	dbfile := "../_testdata/db365.sqlite"

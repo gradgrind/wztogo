@@ -255,6 +255,11 @@ type Lesson struct {
 	Course int
 }
 
+type LessonPlan struct {
+	ID      string
+	LESSONS []Lesson
+}
+
 type WZnode struct {
 	Table string
 	Node  interface{}

@@ -3,6 +3,7 @@ package fet
 import (
 	"fmt"
 	"gradgrind/wztogo/internal/w365"
+	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,6 +20,16 @@ func TestFet(t *testing.T) {
 	wzdb := w365.ReadW365(w365file)
 
 	fmt.Println("\n *******************************************")
+
+	alist := wzbase.GetActivities(&wzdb)
+	fmt.Println("\n -------------------------------------------")
+	for _, a := range alist {
+		fmt.Printf(" >>> %+v\n", a)
+	}
+
+	fmt.Println("\n +++++++++++++++++++++++++++++++++++++++++++")
+	wzbase.SetLessons(&wzdb, "Vorlage", alist)
+	return
 	/*
 		//fmt.Printf("\n Class_Groups: %+v\n", wzdb.AtomicGroups.Class_Groups)
 		fmt.Printf("\n Classes: %+v\n", wzdb.TableMap["CLASSES"])

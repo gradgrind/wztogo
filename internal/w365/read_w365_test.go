@@ -57,10 +57,7 @@ func TestReadW365(t *testing.T) {
 	// At least the initialized activities should be added to the
 	// database. Here all activities (including uninitialized ones) are
 	// added as a "lesson plan", named as the w365 schedule.
-	entry := struct {
-		ID      string
-		LESSONS []wzbase.Lesson
-	}{plan_name, c_l}
+	entry := wzbase.LessonPlan{ID: plan_name, LESSONS: c_l}
 	db.add_node("LESSON_PLANS", entry, "")
 	// Save data to (new) sqlite file
 	dbfile := "../_testdata/db365.sqlite"

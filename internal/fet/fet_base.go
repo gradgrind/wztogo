@@ -53,6 +53,7 @@ type timeConstraints struct {
 	XMLName                                xml.Name `xml:"Time_Constraints_List"`
 	ConstraintBasicCompulsoryTime          basicTimeConstraint
 	ConstraintStudentsSetNotAvailableTimes []studentsNotAvailable
+	ConstraintTeacherNotAvailableTimes     []teacherNotAvailable
 }
 
 type basicTimeConstraint struct {

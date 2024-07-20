@@ -1,6 +1,7 @@
 package w365
 
 import (
+	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"slices"
@@ -42,10 +43,20 @@ func (w365data *W365Data) read_lesson_nodes() map[string]wzbase.Lesson {
 			Fixed:  node[w365_Fixed] == "true",
 			Course: w365data.NodeMap[c],
 		}
+		// It is not clear whether or when there can be more than one room
+		// as "LocaRooms" here. It seems to me the only possiblility to
+		// specify multiple rooms is to use a room-group.
+		//TODO? Assume that a list appearing here is of necessary rooms, just
+		// like a room-group.
 		lr, ok := node[w365_LocalRooms]
 		if ok {
 			for _, r := range strings.Split(lr, LIST_SEP) {
-				lnode.Rooms = append(lnode.Rooms, w365data.NodeMap[r])
+				ri, ok := w365data.NodeMap[r]
+				if !ok {
+					lnode.Rooms = append(lnode.Rooms, w365data.room_group[r]...)
+				} else {
+					lnode.Rooms = append(lnode.Rooms, ri)
+				}
 			}
 		}
 		lesson_map[node[w365_Id]] = lnode
@@ -120,80 +131,151 @@ func (w365data *W365Data) read_course_lessons(
 			})
 		} // otherwise the list "ll" is empty (length == 0).
 		// Amalgamate contiguous lessons, checking against the course needs.
-		course := w365data.NodeList[ci].Node.(wzbase.Course)
-		nlist := course.LESSONS
+		course := w365data.GetNode(ci).(wzbase.Course)
 		// Because of the way the course lesson lengths are determined
 		// (see function "read_activities()"), all lengths are the same,
 		// except possibly the last, which can be shorter.
-		var day, hour int
-		var fixed bool
-		var i0 int
-		var lesson wzbase.Lesson
-		for _, n := range nlist {
+
+		lesson_list := []wzbase.Lesson{}
+	lloop:
+		for _, n := range course.LESSONS {
+			if len(ll) == 0 {
+				break
+			}
 			if n == 1 {
-				// Take the first lesson.
-				if len(ll) > 0 {
-					lesson = ll[0]
-					ll = ll[1:]
-					lesson.Length = 1
-				} else {
+				// Can just take the first Lesson.
+				lx := ll[0]
+				ll = ll[1:]
+				lx.Length = 1
+				lesson_list = append(lesson_list, lx)
+			} else {
+				// Seek n contiguous Lessons
+				x := 0
+				for {
+					if len(ll) < x+n {
+						continue lloop
+					}
+					lx := ll[x]
+					ly := ll[x+n-1]
+					if ly.Day == lx.Day && ly.Hour == lx.Hour+n-1 {
+						//TODO: Check that the Lessons are compatible
+						nn := n
+						f := lx.Fixed
+						r := lx.Rooms
+					rloop1:
+						for {
+							nn--
+							lz := ll[x+nn]
+							if lz.Fixed == f {
+								if len(lz.Rooms) != len(r) {
+									break
+								}
+							rloop2:
+								for _, r0 := range r {
+									for _, r1 := range lz.Rooms {
+										if r1 == r0 {
+											continue rloop2
+										}
+									}
+									break rloop1
+								}
+							}
+							if nn == 0 {
+								goto tloop
+							}
+						}
+						log.Fatalf("Lesson Mismatch: %+v\n", course)
+					tloop:
+						ll = ll[n:]
+						lx.Length = n
+						lesson_list = append(lesson_list, lx)
+						break
+					}
+					x++
+				}
+			}
+		}
+		if len(ll) > 0 {
+			log.Printf("!!! Lesson cards rejected, they don't match the course:\n  %+v\n",
+				course)
+		}
+		//TODO--
+		fmt.Printf("* Set Lessons: %+v\n", lesson_list)
+		joined_lessons = append(joined_lessons, lesson_list...)
+	}
+	//////////////////////////////////////////////////////////
+	/*
+			var day, hour int
+			var fixed bool
+			var i0 int
+			var lesson wzbase.Lesson
+			for _, n := range nlist {
+				if n == 1 {
+					// Take the first lesson.
+					if len(ll) > 0 {
+						lesson = ll[0]
+						ll = ll[1:]
+						lesson.Length = 1
+					} else {
+						// Make an unplaced lesson.
+						lesson = wzbase.Lesson{
+							Day:    -1,
+							Hour:   -1,
+							Length: 1,
+							Course: ci,
+						}
+						joined_lessons = append(joined_lessons, lesson)
+						continue
+					}
+				}
+				length := 0
+				found := false
+				for i, lesson := range ll {
+					if length > 0 {
+						if lesson.Day == day &&
+							lesson.Hour == hour+1 &&
+							lesson.Fixed == fixed {
+							//TODO: What about comparing the room lists???
+							// contiguous
+							length += 1
+							if length == n {
+								// match found
+								lesson = ll[i0]
+								lesson.Length = n
+								ll = append(ll[:i0], ll[i+1:]...)
+								joined_lessons = append(joined_lessons, lesson)
+								found = true
+								break
+							}
+							// not long enough, continue seeking
+							hour++
+							continue
+						}
+						// Otherwise start counting again.
+					}
+					day = lesson.Day
+					hour = lesson.Hour
+					fixed = lesson.Fixed
+					length = 1
+					i0 = i
+				}
+				if !found {
 					// Make an unplaced lesson.
 					lesson = wzbase.Lesson{
 						Day:    -1,
 						Hour:   -1,
-						Length: 1,
+						Length: n,
 						Course: ci,
 					}
 					joined_lessons = append(joined_lessons, lesson)
-					continue
 				}
 			}
-			length := 0
-			found := false
-			for i, lesson := range ll {
-				if length > 0 {
-					if lesson.Day == day &&
-						lesson.Hour == hour+1 &&
-						lesson.Fixed == fixed {
-						//TODO: What about comparing the room lists???
-						// contiguous
-						length += 1
-						if length == n {
-							// match found
-							lesson = ll[i0]
-							lesson.Length = n
-							ll = append(ll[:i0], ll[i+1:]...)
-							joined_lessons = append(joined_lessons, lesson)
-							found = true
-							break
-						}
-						// not long enough, continue seeking
-						hour++
-						continue
-					}
-					// Otherwise start counting again.
-				}
-				day = lesson.Day
-				hour = lesson.Hour
-				fixed = lesson.Fixed
-				length = 1
-				i0 = i
-			}
-			if !found {
-				// Make an unplaced lesson.
-				lesson = wzbase.Lesson{
-					Day:    -1,
-					Hour:   -1,
-					Length: n,
-					Course: ci,
-				}
-				joined_lessons = append(joined_lessons, lesson)
+			if len(ll) != 0 {
+				//TODO: a more helpful error message
+				log.Fatalf("Lesson mismatch for course %d: %+v\n", ci, course)
 			}
 		}
-		if len(ll) != 0 {
-			//TODO: a more helpful error message
-			log.Fatalf("Lesson mismatch for course %d: %+v\n", ci, course)
-		}
-	}
+	*/
+
 	return joined_lessons
 }
