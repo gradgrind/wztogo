@@ -78,7 +78,6 @@ func (w365data *W365Data) read_activities() {
 		// The groups (cdglist) are later added to the groups for
 		// the block, which are then be checked against those of the base
 		// course.
-
 		// * Report invalid subject. It is placed here so that the group(s)
 		// are available for the report.
 		if len(slist) != 1 {

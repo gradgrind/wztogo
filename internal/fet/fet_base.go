@@ -55,6 +55,7 @@ type timeConstraints struct {
 	ConstraintStudentsSetNotAvailableTimes  []studentsNotAvailable
 	ConstraintTeacherNotAvailableTimes      []teacherNotAvailable
 	ConstraintActivityPreferredStartingTime []startingTime
+	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
 }
 
 type basicTimeConstraint struct {
@@ -138,5 +139,6 @@ func make_fet_file(wzdb *wzbase.WZdata,
 	getClasses(&fetinfo)
 	//getCourses(&fetinfo)
 	getActivities(&fetinfo, activities, course2activities, subject_activities)
+	gap_subject_activities(&fetinfo, subject_activities)
 	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }

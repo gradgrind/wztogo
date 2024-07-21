@@ -101,8 +101,12 @@ type CourseGroups []ClassDivGroups
 func (cgs CourseGroups) Print(ng NodeGetter) string {
 	gnlist := []string{}
 	for _, cdgs := range cgs {
-		for _, g := range cdgs.Groups {
-			gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(ng))
+		if cdgs.Div < 0 {
+			gnlist = append(gnlist, ClassGroup{cdgs.Class, 0}.Print(ng))
+		} else {
+			for _, g := range cdgs.Groups {
+				gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(ng))
+			}
 		}
 	}
 	return strings.Join(gnlist, ",")
