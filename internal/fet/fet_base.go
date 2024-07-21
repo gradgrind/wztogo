@@ -50,10 +50,11 @@ type fetInfo struct {
 }
 
 type timeConstraints struct {
-	XMLName                                xml.Name `xml:"Time_Constraints_List"`
-	ConstraintBasicCompulsoryTime          basicTimeConstraint
-	ConstraintStudentsSetNotAvailableTimes []studentsNotAvailable
-	ConstraintTeacherNotAvailableTimes     []teacherNotAvailable
+	XMLName                                 xml.Name `xml:"Time_Constraints_List"`
+	ConstraintBasicCompulsoryTime           basicTimeConstraint
+	ConstraintStudentsSetNotAvailableTimes  []studentsNotAvailable
+	ConstraintTeacherNotAvailableTimes      []teacherNotAvailable
+	ConstraintActivityPreferredStartingTime []startingTime
 }
 
 type basicTimeConstraint struct {
@@ -73,7 +74,11 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func make_fet_file(wzdb wzbase.WZdata) string {
+func make_fet_file(wzdb *wzbase.WZdata,
+	activities []wzbase.Activity,
+	course2activities map[int][]int,
+	subject_activities []wzbase.SubjectGroupActivities,
+) string {
 	//TODO--
 	fmt.Printf("\n????? %+v\n", wzdb.Schooldata)
 
@@ -104,7 +109,7 @@ func make_fet_file(wzdb wzbase.WZdata) string {
 		ref2fet[ref] = v
 	}
 	fetinfo := fetInfo{
-		wzdb:    &wzdb,
+		wzdb:    wzdb,
 		ref2fet: ref2fet,
 		fetdata: fet{
 			Version:          fet_version,
@@ -131,6 +136,7 @@ func make_fet_file(wzdb wzbase.WZdata) string {
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
 	getClasses(&fetinfo)
-	getCourses(&fetinfo)
+	//getCourses(&fetinfo)
+	getActivities(&fetinfo, activities, course2activities, subject_activities)
 	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }
