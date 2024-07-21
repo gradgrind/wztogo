@@ -32,6 +32,7 @@ type fet struct {
 	Hours_List       fetHoursList
 	Teachers_List    fetTeachersList
 	Subjects_List    fetSubjectsList
+	Rooms_List       fetRoomsList
 	Students_List    fetStudentsList
 	//Buildings_List
 	//TODO:
@@ -65,8 +66,10 @@ type basicTimeConstraint struct {
 }
 
 type spaceConstraints struct {
-	XMLName                        xml.Name `xml:"Space_Constraints_List"`
-	ConstraintBasicCompulsorySpace basicSpaceConstraint
+	XMLName                          xml.Name `xml:"Space_Constraints_List"`
+	ConstraintBasicCompulsorySpace   basicSpaceConstraint
+	ConstraintActivityPreferredRoom  []fixedRoom
+	ConstraintActivityPreferredRooms []roomChoice
 }
 
 type basicSpaceConstraint struct {
@@ -136,9 +139,10 @@ func make_fet_file(wzdb *wzbase.WZdata,
 	getHours(&fetinfo)
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
+	getRooms(&fetinfo)
 	getClasses(&fetinfo)
 	//getCourses(&fetinfo)
-	getActivities(&fetinfo, activities, course2activities, subject_activities)
+	getActivities(&fetinfo, activities, course2activities)
 	gap_subject_activities(&fetinfo, subject_activities)
 	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }

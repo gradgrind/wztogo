@@ -27,8 +27,9 @@ type fetActivitiesList struct {
 func getActivities(fetinfo *fetInfo,
 	activities []wzbase.Activity,
 	course2activities map[int][]int,
-	subject_activities []wzbase.SubjectGroupActivities,
 ) {
+	fixed_rooms := []fixedRoom{}
+	room_choices := []roomChoice{}
 	// Preprocessing because of courses with multiple lessons.
 	course_act := map[int]fetActivity{}
 	for ci, acts := range course2activities {
@@ -72,6 +73,18 @@ func getActivities(fetinfo *fetInfo,
 			Activity_Group_Id: aid,
 			Comments:          fetinfo.wzdb.SourceReferences[ci],
 		}
+
+		//TODO: This needs quite some work! It is currently not complete.
+		// It also needs repeating for multiple activities, with
+		// appropriate id field ...
+		// And the constraints must be added to the fet file!
+		addRoomConstraint(fetinfo,
+			&fixed_rooms,
+			&room_choices,
+			acts[0]+1,
+			activity.RoomNeeds,
+		)
+
 	}
 	// Now generate the full list of fet activities
 	starting_times := []startingTime{}

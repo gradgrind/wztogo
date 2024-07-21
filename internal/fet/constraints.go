@@ -5,20 +5,6 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 )
 
-/*
-<ConstraintMinDaysBetweenActivities>
-
-	<Weight_Percentage>100</Weight_Percentage>
-	<Consecutive_If_Same_Day>true</Consecutive_If_Same_Day>
-	<Number_of_Activities>2</Number_of_Activities>
-	<Activity_Id>108</Activity_Id>
-	<Activity_Id>109</Activity_Id>
-	<MinDays>1</MinDays>
-	<Active>true</Active>
-	<Comments></Comments>
-
-</ConstraintMinDaysBetweenActivities>
-*/
 type startingTime struct {
 	XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
 	Weight_Percentage  int
