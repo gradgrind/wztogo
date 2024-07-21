@@ -1,12 +1,15 @@
 package fet
 
 import (
+	"cmp"
 	"fmt"
 	"gradgrind/wztogo/internal/w365"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -21,14 +24,47 @@ func TestFet(t *testing.T) {
 
 	fmt.Println("\n *******************************************")
 
-	alist := wzbase.GetActivities(&wzdb)
+	alist, course2activities, subject_courses := wzbase.GetActivities(&wzdb)
 	fmt.Println("\n -------------------------------------------")
 	for _, a := range alist {
 		fmt.Printf(" >>> %+v\n", a)
 	}
 
 	fmt.Println("\n +++++++++++++++++++++++++++++++++++++++++++")
-	wzbase.SetLessons(&wzdb, "Vorlage", alist)
+	wzbase.SetLessons(&wzdb, "Vorlage", alist, course2activities)
+	for _, a := range alist {
+		fmt.Printf("+++ %+v\n", a)
+	}
+
+	fmt.Println("\n +++++ SubjectActivities +++++")
+	sgalist := wzbase.SubjectActivities(&wzdb,
+		subject_courses, course2activities)
+	type sgapr struct {
+		subject    string
+		groups     string
+		activities []int
+	}
+	sgaprl := []sgapr{}
+	for _, sga := range sgalist {
+		s := wzdb.GetNode(sga.Subject).(wzbase.Subject).ID
+		gg := []string{}
+		for _, cg := range sga.Groups {
+			gg = append(gg, cg.Print(wzdb))
+		}
+		sgaprl = append(sgaprl,
+			sgapr{s, strings.Join(gg, ","), sga.Activities})
+	}
+	slices.SortStableFunc(sgaprl,
+		func(a, b sgapr) int {
+			if n := cmp.Compare(a.groups, b.groups); n != 0 {
+				return n
+			}
+			// If names are equal, order by age
+			return cmp.Compare(a.subject, b.subject)
+		})
+	for _, sga := range sgaprl {
+		fmt.Printf("XXX %s / %s: %+v\n", sga.groups, sga.subject, sga.activities)
+	}
 	return
 	/*
 		//fmt.Printf("\n Class_Groups: %+v\n", wzdb.AtomicGroups.Class_Groups)

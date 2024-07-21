@@ -248,8 +248,11 @@ func ReadW365(w365file string) wzbase.WZdata {
 	db365.read_groups()
 	db365.read_activities()
 	schedules := db365.read_lesson_times()
+
 	//TODO: I might want to select the schedule ...
-	// Here just the first one is chosen.
+	// ... OR add all schedules?
+
+	// Here just the first schedule is chosen.
 	plan_name := schedules[0].name
 	c_l := db365.read_course_lessons(schedules[0].lessons)
 	// At least the initialized activities should be added to the

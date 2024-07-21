@@ -98,18 +98,6 @@ type ClassDivGroups struct {
 
 type CourseGroups []ClassDivGroups
 
-/*
-	func (cgs CourseGroups) Print(nodelist []WZnode) string {
-		gnlist := []string{}
-		for _, cdgs := range cgs {
-			for _, g := range cdgs.Groups {
-				gnlist = append(gnlist, ClassGroup{cdgs.Class, g}.Print(nodelist))
-			}
-		}
-		return strings.Join(gnlist, ",")
-	}
-*/
-
 func (cgs CourseGroups) Print(ng NodeGetter) string {
 	gnlist := []string{}
 	for _, cdgs := range cgs {
@@ -183,17 +171,6 @@ type ClassGroup struct {
 	GIX int
 }
 
-/*
-func (cg ClassGroup) Print(nodelist []WZnode) string {
-	c := nodelist[cg.CIX].Node.(Class)
-	if cg.GIX == 0 {
-		return c.ID
-	}
-	g := nodelist[cg.GIX].Node.(Group)
-	return fmt.Sprintf("%s.%s", c.ID, g.ID)
-}
-*/
-
 func (cg ClassGroup) Print(ng NodeGetter) string {
 	c := ng.GetNode(cg.CIX).(Class)
 	if cg.GIX == 0 {
@@ -214,18 +191,6 @@ type Course struct {
 	BLOCK_UNITS     float64
 	FLAGS           map[string]bool
 }
-
-/*
-func (c Course) Print(nodelist []WZnode) string {
-	g := c.GROUPS.Print(nodelist)
-	s := nodelist[c.SUBJECT].Node.(Subject).ID
-	tl := []string{}
-	for _, ti := range c.TEACHERS {
-		tl = append(tl, nodelist[ti].Node.(Teacher).ID)
-	}
-	return fmt.Sprintf("<%s-%s-%s>", g, s, strings.Join(tl, ","))
-}
-*/
 
 func (c Course) Print(ng NodeGetter) string {
 	g := c.GROUPS.Print(ng)
@@ -291,6 +256,8 @@ type WZdata struct {
 	ActiveDivisions  map[int][][]int
 	AtomicGroups     AtomicGroups
 	SourceReferences map[int]string
+	// This one maps subject -> atomic-group -> activities:
+	//SbjAGActivities  map[int]map[int]map[int]bool
 }
 
 func (wzdb WZdata) GetNode(ref int) interface{} {
