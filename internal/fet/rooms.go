@@ -69,6 +69,11 @@ func getRooms(fetinfo *fetInfo) {
 // rooms. It is not, however, clear how additional ("user-input") rooms
 // should be handled. So I will report them and then ignore them.
 func addRoomConstraint(fetinfo *fetInfo,
+	//TODO: Is there an advantage to using a fixed room over a roomchoice
+	// when there is only one room? Would it be faster? Both variants seem
+	// to work. An advantage of only using choices is that in the output
+	// file (...data_and_timetable.fet) the generated rooms are then easy
+	// to find, being the only fixed ones.
 	fixed_rooms *([]fixedRoom),
 	room_choices *([]roomChoice),
 	virtual_rooms map[string]string,
@@ -86,12 +91,21 @@ func addRoomConstraint(fetinfo *fetInfo,
 		if len(roomspec.Compulsory) == 1 {
 			rm := fetinfo.ref2fet[roomspec.Compulsory[0]]
 			for _, ai := range activity_indexes {
-				*fixed_rooms = append(*fixed_rooms, fixedRoom{
-					Weight_Percentage:  100,
-					Activity_Id:        ai + 1,
-					Room:               rm,
-					Permanently_Locked: true,
-					Active:             true,
+				/*
+					*fixed_rooms = append(*fixed_rooms, fixedRoom{
+						Weight_Percentage:  100,
+						Activity_Id:        ai + 1,
+						Room:               rm,
+						Permanently_Locked: true,
+						Active:             true,
+					})
+				*/
+				*room_choices = append(*room_choices, roomChoice{
+					Weight_Percentage:         100,
+					Activity_Id:               ai + 1,
+					Number_of_Preferred_Rooms: 1,
+					Preferred_Room:            []string{rm},
+					Active:                    true,
 				})
 			}
 		} else {
@@ -167,12 +181,21 @@ func addRoomConstraint(fetinfo *fetInfo,
 			virtual_rooms[key] = vr
 		}
 		for _, ai := range activity_indexes {
-			*fixed_rooms = append(*fixed_rooms, fixedRoom{
-				Weight_Percentage:  100,
-				Activity_Id:        ai + 1,
-				Room:               vr,
-				Permanently_Locked: true,
-				Active:             true,
+			/*
+				*fixed_rooms = append(*fixed_rooms, fixedRoom{
+					Weight_Percentage:  100,
+					Activity_Id:        ai + 1,
+					Room:               vr,
+					Permanently_Locked: true,
+					Active:             true,
+				})
+			*/
+			*room_choices = append(*room_choices, roomChoice{
+				Weight_Percentage:         100,
+				Activity_Id:               ai + 1,
+				Number_of_Preferred_Rooms: 1,
+				Preferred_Room:            []string{vr},
+				Active:                    true,
 			})
 		}
 	}

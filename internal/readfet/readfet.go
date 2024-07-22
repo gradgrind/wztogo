@@ -80,4 +80,68 @@ func to_w365(fetpath string) {
 
 	//TODO: Placements with virtual rooms will have two entries, only
 	// one will have the real rooms!
+
+	fmt.Println("========================================================")
+	activities := v.Activities_List.Activity
+	fmt.Printf("  Activities: %d\n", len(activities))
+	room_allocation := make([][]string, len(activities))
+	for _, rdata := range v.Space_Constraints_List.ConstraintActivityPreferredRoom {
+		fmt.Printf("  -- %+v\n", rdata)
+		ai := rdata.Activity_Id
+		r := rdata.Room
+		rr := rdata.Real_Room
+		if len(rr) > 0 {
+			room_allocation[ai-1] = rr
+		} else {
+			room_allocation[ai-1] = []string{r}
+		}
+	}
+	for _, r := range room_allocation {
+		fmt.Printf(" + %+v\n", r)
+	}
 }
+
+/*
+tim := time.Now()
+fmt.Printf("Go launched at %s\n", tim.Format("2006-01-02T15:04:05"))
+
+uuid
+----
+uuid := uuid.NewString()
+fmt.Println(uuid)
+
+
+            lessons.extend([
+                "*Lesson",
+                f"ContainerId={container_id}",
+                f'Course={cx}',
+                f'Day={p["Day"]}',
+                f'Hour={h}',
+                f'Fixed={p["Fixed"]}',
+                f"Id={lid}",
+                f"LastChanged={date_time}",     # 2024-03-30T18:59:53
+                f"ListPosition={lesson_index}",
+#TODO
+                #f"LocalRooms={}", # 0b5413dc-1420-478f-b266-212fed8d2564
+                "",
+            ])
+
+*/
+
+/*
+func new_lesson() {
+	lid := uuid.NewString()
+	les := []string{
+		"*Lesson",
+		fmt.Sprintf("ContainerId=%s", container_id),
+		fmt.Sprintf("Course=%s", course_id),
+		fmt.Sprintf("Day=%d", day),
+		fmt.Sprintf("Hour=%d", hour),
+		fmt.Sprintf("Fixed=%t", fixed),
+		fmt.Sprintf("Id=%s", lid),
+		fmt.Sprintf("LastChanged=%s", date),
+		//fmt.Sprintf("LocalRooms=%s", room),
+	}
+
+}
+*/
