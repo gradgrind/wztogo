@@ -8,22 +8,11 @@ import (
 	"os"
 )
 
-//	type Activity struct {
-//		Id       int
-//		Duration int
-//		Id365    string `xml:"Comments"`
-//	}
 type Activity struct {
 	//XMLName xml.Name `xml:"Activity"`
-	Id int
-	//	Teacher           []string
-	//	Subject           string
-	//	Students          []string
-	//	Active            bool
-	//	Total_Duration    int
+	Id       int
 	Duration int
-	//	Activity_Group_Id int
-	Id365 string `xml:"Comments"`
+	Id365    string `xml:"Comments"`
 }
 
 type Activities_List struct {
@@ -39,18 +28,11 @@ type ConstraintActivityPreferredStartingTime struct {
 	Permanently_Locked bool
 }
 
-type StartingTime struct {
-	XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
-	Activity_Id        int
-	Preferred_Day      string
-	Preferred_Hour     string
-	Permanently_Locked bool
-}
-
 type ConstraintActivityPreferredRoom struct {
 	//XMLName     xml.Name `xml:"ConstraintActivityPreferredRoom"`
 	Activity_Id int
 	Room        string
+	Real_Room   []string
 	//Permanently_Locked bool
 }
 
@@ -95,4 +77,7 @@ func to_w365(fetpath string) {
 		v.Time_Constraints_List)
 	fmt.Printf(" --- Space_Constraints_List:\n%+v\n",
 		v.Space_Constraints_List)
+
+	//TODO: Placements with virtual rooms will have two entries, only
+	// one will have the real rooms!
 }
