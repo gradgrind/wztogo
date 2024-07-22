@@ -30,6 +30,7 @@ func getActivities(fetinfo *fetInfo,
 ) {
 	fixed_rooms := []fixedRoom{}
 	room_choices := []roomChoice{}
+	virtual_rooms := map[string]string{}
 	// Preprocessing because of courses with multiple lessons.
 	course_act := map[int]fetActivity{}
 	for ci, acts := range course2activities {
@@ -73,29 +74,24 @@ func getActivities(fetinfo *fetInfo,
 			Activity_Group_Id: aid,
 			Comments:          fetinfo.wzdb.SourceReferences[ci],
 		}
-
-		//TODO: This needs quite some work! It is currently not complete.
-		// It also needs repeating for multiple activities, with
-		// appropriate id field ...
-		// And the constraints must be added to the fet file!
 		addRoomConstraint(fetinfo,
 			&fixed_rooms,
 			&room_choices,
-			acts[0]+1,
+			virtual_rooms,
+			acts,
 			activity.RoomNeeds,
 		)
-
 	}
 	// Now generate the full list of fet activities
 	starting_times := []startingTime{}
 	items := []fetActivity{}
+	fetinfo.fixed_activities = make([]bool, len(activities))
 	for i, activity := range activities {
 		ci := activity.Course
 		fetact := course_act[ci]
 		fetact.Id = i + 1
 		fetact.Duration = activity.Duration
 		items = append(items, fetact)
-
 		// Activity placement
 		day := activity.Day
 		if day >= 0 {
@@ -108,14 +104,13 @@ func getActivities(fetinfo *fetInfo,
 				Permanently_Locked: true,
 				Active:             true,
 			})
+			fetinfo.fixed_activities[i] = true
 		}
-
-		//TODO: Rooms
-		//TODO: subject mappings
-
 	}
 	fetinfo.fetdata.Activities_List = fetActivitiesList{
 		Activity: items,
 	}
 	fetinfo.fetdata.Time_Constraints_List.ConstraintActivityPreferredStartingTime = starting_times
+	fetinfo.fetdata.Space_Constraints_List.ConstraintActivityPreferredRoom = fixed_rooms
+	fetinfo.fetdata.Space_Constraints_List.ConstraintActivityPreferredRooms = room_choices
 }

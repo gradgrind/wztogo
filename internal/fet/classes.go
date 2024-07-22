@@ -84,6 +84,7 @@ func getClasses(fetinfo *fetInfo) {
 		//}
 		//calt := cl.SORTING //?
 		cname := cl.ID
+		//fmt.Printf("##### cags %s: %+v\n", cname, cags)
 		groups := []fetGroup{}
 		if cags.GetCardinality() > 1 {
 			for _, cg := range cgs {

@@ -43,11 +43,12 @@ type fet struct {
 }
 
 type fetInfo struct {
-	wzdb    *wzbase.WZdata
-	ref2fet map[int]string
-	days    []string
-	hours   []string
-	fetdata fet
+	wzdb             *wzbase.WZdata
+	ref2fet          map[int]string
+	days             []string
+	hours            []string
+	fetdata          fet
+	fixed_activities []bool
 }
 
 type timeConstraints struct {

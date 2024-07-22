@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
+	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -70,35 +71,43 @@ func getRooms(fetinfo *fetInfo) {
 func addRoomConstraint(fetinfo *fetInfo,
 	fixed_rooms *([]fixedRoom),
 	room_choices *([]roomChoice),
-	activity_id int,
+	virtual_rooms map[string]string,
+	activity_indexes []int,
 	roomspec wzbase.RoomSpec,
 ) {
+	if roomspec.UserInput != 0 {
+		log.Printf("WARNING: 'User-Input' rooms are not supported.")
+	}
 	nrooms := len(roomspec.Compulsory) + len(roomspec.Choices)
 	if nrooms == 0 {
 		return
 	}
 	if nrooms == 1 {
 		if len(roomspec.Compulsory) == 1 {
-			*fixed_rooms = append(*fixed_rooms, fixedRoom{
-				Weight_Percentage:  100,
-				Activity_Id:        activity_id,
-				Room:               fetinfo.ref2fet[roomspec.Compulsory[0]],
-				Permanently_Locked: true,
-				Active:             true,
-			})
-			//fetinfo.fetdata.Space_Constraints_List.ConstraintActivityPreferredRoom = cr
+			rm := fetinfo.ref2fet[roomspec.Compulsory[0]]
+			for _, ai := range activity_indexes {
+				*fixed_rooms = append(*fixed_rooms, fixedRoom{
+					Weight_Percentage:  100,
+					Activity_Id:        ai + 1,
+					Room:               rm,
+					Permanently_Locked: true,
+					Active:             true,
+				})
+			}
 		} else {
 			rlist := []string{}
 			for _, ri := range roomspec.Choices[0] {
 				rlist = append(rlist, fetinfo.ref2fet[ri])
 			}
-			*room_choices = append(*room_choices, roomChoice{
-				Weight_Percentage:         100,
-				Activity_Id:               activity_id,
-				Number_of_Preferred_Rooms: len(rlist),
-				Preferred_Room:            rlist,
-				Active:                    true,
-			})
+			for _, ai := range activity_indexes {
+				*room_choices = append(*room_choices, roomChoice{
+					Weight_Percentage:         100,
+					Activity_Id:               ai + 1,
+					Number_of_Preferred_Rooms: len(rlist),
+					Preferred_Room:            rlist,
+					Active:                    true,
+				})
+			}
 		}
 	} else {
 		// Multiple rooms, use a virtual room.
@@ -123,70 +132,48 @@ func addRoomConstraint(fetinfo *fetInfo,
 		slices.Sort(xrooms)
 		allrooms = append(allrooms, xrooms...)
 		key := strings.Join(allrooms, "&")
-
-		//TODO ...
-		fmt.Printf("????? allrooms: %s\n", key)
-	}
-
-}
-
-/*
-<ConstraintActivityPreferredRooms>
-	<Weight_Percentage>100</Weight_Percentage>
-	<Activity_Id>190</Activity_Id>
-	<Number_of_Preferred_Rooms>3</Number_of_Preferred_Rooms>
-	<Preferred_Room>EuO</Preferred_Room>
-	<Preferred_Room>EuK</Preferred_Room>
-	<Preferred_Room>EuU</Preferred_Room>
-	<Active>true</Active>
-	<Comments></Comments>
-</ConstraintActivityPreferredRooms>
-
-<ConstraintActivityPreferredRoom>
-	<Weight_Percentage>100</Weight_Percentage>
-	<Activity_Id>595</Activity_Id>
-	<Room>Sp</Room>
-	<Permanently_Locked>true</Permanently_Locked>
-	<Active>true</Active>
-	<Comments></Comments>
-</ConstraintActivityPreferredRoom>
-*/
-
-/*
-	rooms = append(rooms, fetRoom{
-		Name:     "Room1",
-		Capacity: 30000,
-		Virtual:  false,
-		Comments: "First room",
-	})
-	rooms = append(rooms, fetRoom{
-		Name:     "Room2",
-		Capacity: 30000,
-		Virtual:  false,
-		Comments: "Second room",
-	})
-
-	rrlist := []realRoomSet{}
-	rlist1 := []string{"Room1"}
-	rlist2 := []string{"Room2"}
-
-	rrlist = append(rrlist, realRoomSet{
-		Number_of_Real_Rooms: 1, Real_Room: rlist1,
-	})
-	rrlist = append(rrlist, realRoomSet{
-		Number_of_Real_Rooms: 1, Real_Room: rlist2,
-	})
-	rooms = append(rooms, fetRoom{
-		Name:                         "V001",
-		Capacity:                     30000,
-		Virtual:                      true,
-		Number_of_Sets_of_Real_Rooms: 2,
-		Set_of_Real_Rooms:            rrlist,
-		Comments:                     "Virtual room 1",
-	})
-
-	fetinfo.fetdata.Rooms_List = fetRoomsList{
-		Room: rooms,
+		vr, ok := virtual_rooms[key]
+		if !ok {
+			// Make virtual room.
+			rrlist := []realRoomSet{}
+			for _, ri := range roomspec.Compulsory {
+				rrlist = append(rrlist, realRoomSet{
+					Number_of_Real_Rooms: 1,
+					Real_Room:            []string{fetinfo.ref2fet[ri]},
+				})
+			}
+			for _, ril := range roomspec.Choices {
+				rl := []string{}
+				for _, ri := range ril {
+					rl = append(rl, fetinfo.ref2fet[ri])
+				}
+				rrlist = append(rrlist, realRoomSet{
+					Number_of_Real_Rooms: len(rl),
+					Real_Room:            rl,
+				})
+			}
+			vr = fmt.Sprintf("v%03d", len(virtual_rooms)+1)
+			vroom := fetRoom{
+				Name:                         vr,
+				Capacity:                     30000,
+				Virtual:                      true,
+				Number_of_Sets_of_Real_Rooms: len(rrlist),
+				Set_of_Real_Rooms:            rrlist,
+			}
+			// Add the virtual room to the fet file
+			fetinfo.fetdata.Rooms_List.Room = append(
+				fetinfo.fetdata.Rooms_List.Room, vroom)
+			// Remember key/value
+			virtual_rooms[key] = vr
+		}
+		for _, ai := range activity_indexes {
+			*fixed_rooms = append(*fixed_rooms, fixedRoom{
+				Weight_Percentage:  100,
+				Activity_Id:        ai + 1,
+				Room:               vr,
+				Permanently_Locked: true,
+				Active:             true,
+			})
+		}
 	}
 }
-*/

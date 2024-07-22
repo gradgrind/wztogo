@@ -33,8 +33,16 @@ func gap_subject_activities(fetinfo *fetInfo,
 		l := len(sga.Activities)
 		// Adjust indexes for fet
 		alist := []int{}
+		// Skip if all activities are "fixed".
+		allfixed := true
 		for _, ai := range sga.Activities {
 			alist = append(alist, ai+1)
+			if !fetinfo.fixed_activities[ai] {
+				allfixed = false
+			}
+		}
+		if allfixed {
+			continue
 		}
 		gsalist = append(gsalist, minDaysBetweenActivities{
 			Weight_Percentage:       100,
