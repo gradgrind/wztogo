@@ -6,7 +6,31 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
+
+type Day struct {
+	//XMLName xml.Name `xml:"Day"`
+	Name string
+}
+
+type Days_List struct {
+	//XMLName xml.Name `xml:"Days_List"`
+	Day []Day
+}
+
+type Hour struct {
+	//XMLName xml.Name `xml:"Hour"`
+	Name string
+}
+
+type Hours_List struct {
+	//XMLName xml.Name `xml:"Hours_List"`
+	Hour []Hour
+}
 
 type Activity struct {
 	//XMLName xml.Name `xml:"Activity"`
@@ -49,12 +73,14 @@ type Space_Constraints_List struct {
 type Result struct {
 	XMLName                xml.Name `xml:"fet"`
 	YearId365              string   `xml:"Comments"`
+	Days_List              Days_List
+	Hours_List             Hours_List
 	Activities_List        Activities_List
 	Time_Constraints_List  Time_Constraints_List
 	Space_Constraints_List Space_Constraints_List
 }
 
-func to_w365(fetpath string) {
+func to_w365(fetpath string) string {
 	// Open the  XML file
 	xmlFile, err := os.Open(fetpath)
 	if err != nil {
@@ -71,77 +97,89 @@ func to_w365(fetpath string) {
 		log.Fatalf("XML error in %s:\n %v\n", fetpath, err)
 	}
 
-	fmt.Printf(" --- Year-Id: %s\n", v.YearId365)
-	fmt.Printf(" --- Activities_List:\n%+v\n", v.Activities_List)
-	fmt.Printf(" --- Time_Constraints_List:\n%+v\n",
-		v.Time_Constraints_List)
-	fmt.Printf(" --- Space_Constraints_List:\n%+v\n",
-		v.Space_Constraints_List)
+	//fmt.Printf(" --- Year-Id: %s\n", v.YearId365)
 
-	//TODO: Placements with virtual rooms will have two entries, only
-	// one will have the real rooms!
-
-	fmt.Println("========================================================")
-	activities := v.Activities_List.Activity
-	fmt.Printf("  Activities: %d\n", len(activities))
-	room_allocation := make([][]string, len(activities))
-	for _, rdata := range v.Space_Constraints_List.ConstraintActivityPreferredRoom {
-		fmt.Printf("  -- %+v\n", rdata)
-		ai := rdata.Activity_Id
-		r := rdata.Room
-		rr := rdata.Real_Room
-		if len(rr) > 0 {
-			room_allocation[ai-1] = rr
-		} else {
-			room_allocation[ai-1] = []string{r}
+	daymap := map[string]int{}
+	for i, d := range v.Days_List.Day {
+		daymap[d.Name] = i
+	}
+	//fmt.Printf("*+ Days: %+v\n", daymap)
+	hourmap := map[string]int{}
+	for i, h := range v.Hours_List.Hour {
+		hourmap[h.Name] = i
+	}
+	//fmt.Printf("*+ Hours: %+v\n", hourmap)
+	amap := map[int]Activity{}
+	for _, a := range v.Activities_List.Activity {
+		amap[a.Id] = a
+	}
+	yearid := v.YearId365
+	tim := time.Now().Format("2006-01-02T15:04:05")
+	lessons := []string{}
+	lids := []string{}
+	for _, tdata := range v.Time_Constraints_List.ConstraintActivityPreferredStartingTime {
+		aid := tdata.Activity_Id
+		d := daymap[tdata.Preferred_Day]
+		h := hourmap[tdata.Preferred_Hour]
+		fixed := tdata.Permanently_Locked
+		a := amap[aid]
+		for i := range a.Duration {
+			lid := uuid.NewString()
+			lids = append(lids, lid)
+			les := []string{
+				"*Lesson",
+				fmt.Sprintf("ContainerId=%s", yearid),
+				fmt.Sprintf("Course=%s", a.Id365),
+				fmt.Sprintf("Day=%d", d),
+				fmt.Sprintf("Hour=%d", h+i),
+				fmt.Sprintf("Fixed=%t", fixed),
+				fmt.Sprintf("Id=%s", lid),
+				fmt.Sprintf("LastChanged=%s", tim),
+				//TODO: It might be sensible to pass at least the single rooms.
+				// Otherwise, retention of the room-groups would be helpful!
+				//fmt.Sprintf("LocalRooms=%s", room),
+				"",
+			}
+			lessons = append(lessons, les...)
 		}
 	}
-	for _, r := range room_allocation {
-		fmt.Printf(" + %+v\n", r)
+	schedule_name := "fet001"
+	list_pos := "100.0"
+	schedule := []string{
+		"*Schedule",
+		fmt.Sprintf("ContainerId=%s", yearid),
+		//f"End=",   #01. 03. 2024    # unused?
+		fmt.Sprintf("Id=%s", uuid.NewString()),
+		fmt.Sprintf("LastChanged=%s", tim), // 2024-03-30T18:59:53
+		fmt.Sprintf("Lessons=%s", strings.Join(lids, "#")),
+		fmt.Sprintf("ListPosition=%s", list_pos),
+		fmt.Sprintf("Name=%s", schedule_name),
+		"NumberOfManualChanges=0",
+		//f"Start=",  #01. 03. 2024  # unused?
+		"YearPercent=1.0",
+		"",
 	}
+	schedule = append(schedule, lessons...)
+	return strings.Join(schedule, "\n")
+
+	/*
+		//TODO: If single room constraints are used, placements with virtual
+		// rooms will have two entries, only one will have the real rooms!
+
+			room_allocation := make([][]string, len(activities))
+			for _, rdata := range v.Space_Constraints_List.ConstraintActivityPreferredRoom {
+				fmt.Printf("  -- %+v\n", rdata)
+				ai := rdata.Activity_Id
+				r := rdata.Room
+				rr := rdata.Real_Room
+				if len(rr) > 0 {
+					room_allocation[ai-1] = rr
+				} else {
+					room_allocation[ai-1] = []string{r}
+				}
+			}
+			for _, r := range room_allocation {
+				fmt.Printf(" + %+v\n", r)
+			}
+	*/
 }
-
-/*
-tim := time.Now()
-fmt.Printf("Go launched at %s\n", tim.Format("2006-01-02T15:04:05"))
-
-uuid
-----
-uuid := uuid.NewString()
-fmt.Println(uuid)
-
-
-            lessons.extend([
-                "*Lesson",
-                f"ContainerId={container_id}",
-                f'Course={cx}',
-                f'Day={p["Day"]}',
-                f'Hour={h}',
-                f'Fixed={p["Fixed"]}',
-                f"Id={lid}",
-                f"LastChanged={date_time}",     # 2024-03-30T18:59:53
-                f"ListPosition={lesson_index}",
-#TODO
-                #f"LocalRooms={}", # 0b5413dc-1420-478f-b266-212fed8d2564
-                "",
-            ])
-
-*/
-
-/*
-func new_lesson() {
-	lid := uuid.NewString()
-	les := []string{
-		"*Lesson",
-		fmt.Sprintf("ContainerId=%s", container_id),
-		fmt.Sprintf("Course=%s", course_id),
-		fmt.Sprintf("Day=%d", day),
-		fmt.Sprintf("Hour=%d", hour),
-		fmt.Sprintf("Fixed=%t", fixed),
-		fmt.Sprintf("Id=%s", lid),
-		fmt.Sprintf("LastChanged=%s", date),
-		//fmt.Sprintf("LocalRooms=%s", room),
-	}
-
-}
-*/
