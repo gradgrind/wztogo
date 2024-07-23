@@ -43,6 +43,7 @@ type Subject struct {
 type Room struct {
 	ID            string
 	NAME          string
+	SUBROOMS      []int
 	X             int
 	NOT_AVAILABLE []([]int)
 }

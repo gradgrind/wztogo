@@ -52,7 +52,7 @@ func (w365data *W365Data) read_lesson_nodes() map[string]wzbase.Lesson {
 			for _, r := range strings.Split(lr, LIST_SEP) {
 				ri, ok := w365data.NodeMap[r]
 				if !ok {
-					lnode.Rooms = append(lnode.Rooms, w365data.room_group[r]...)
+					log.Fatalf("Unknown 'LocalRoom' in 'Lesson': %s\n", r)
 				} else {
 					lnode.Rooms = append(lnode.Rooms, ri)
 				}

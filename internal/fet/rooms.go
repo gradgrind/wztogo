@@ -11,8 +11,9 @@ import (
 )
 
 type fetRoom struct {
-	XMLName                      xml.Name      `xml:"Room"`
-	Name                         string        // e.g. k3 ...
+	XMLName                      xml.Name `xml:"Room"`
+	Name                         string   // e.g. k3 ...
+	Long_Name                    string
 	Capacity                     int           // 30000
 	Virtual                      bool          // false`
 	Number_of_Sets_of_Real_Rooms int           `xml:",omitempty"`
@@ -54,10 +55,11 @@ func getRooms(fetinfo *fetInfo) {
 	for _, ti := range fetinfo.wzdb.TableMap["ROOMS"] {
 		n := fetinfo.wzdb.GetNode(ti).(wzbase.Room)
 		rooms = append(rooms, fetRoom{
-			Name:     n.ID,
-			Capacity: 30000,
-			Virtual:  false,
-			Comments: n.NAME,
+			Name:      n.ID,
+			Long_Name: n.NAME,
+			Capacity:  30000,
+			Virtual:   false,
+			Comments:  fetinfo.wzdb.SourceReferences[ti],
 		})
 	}
 	fetinfo.fetdata.Rooms_List = fetRoomsList{

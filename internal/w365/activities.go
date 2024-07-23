@@ -96,9 +96,6 @@ func (w365data *W365Data) read_activities() {
 		// should be able to cater for this. Waldorf 365 only supports a
 		// subset.
 
-		// Room groups should not be in the database. These get converted
-		// to multiple compulsory rooms.
-
 		var roomspec wzbase.RoomSpec
 		rfield := node[w365_PreferredRooms]
 		if rfield == "" {
@@ -109,41 +106,22 @@ func (w365data *W365Data) read_activities() {
 				UserInput:  1,
 			}
 		} else {
-			rlist := [][]int{}
+			rlist := []int{}
 			for _, s := range strings.Split(rfield, LIST_SEP) {
-				rg, ok := w365data.room_group[s]
-				if ok {
-					rlist = append(rlist, rg)
-				} else {
-					rlist = append(rlist, []int{w365data.NodeMap[s]})
-				}
+				rlist = append(rlist, w365data.NodeMap[s])
 			}
 			if len(rlist) == 1 {
 				// A single compulsory room (list)
 				roomspec = wzbase.RoomSpec{
-					Compulsory: rlist[0],
+					Compulsory: []int{rlist[0]},
 					Choices:    [][]int{},
 					UserInput:  0,
 				}
 			} else {
 				// A single room-choice list
-				choices := []int{}
-				for _, rc := range rlist {
-					if len(rc) != 1 {
-						// Don't allow room groups in a choice list
-						log.Printf("\n=========================================\n"+
-							"  !!!  Room group in room choice list: %s (%s)\n"+
-							"=========================================\n",
-							cdglist.Print(w365data), stlist,
-						)
-						choices = choices[:0] // clear list
-						break
-					}
-					choices = append(choices, rc[0])
-				}
 				roomspec = wzbase.RoomSpec{
 					Compulsory: []int{},
-					Choices:    [][]int{choices},
+					Choices:    [][]int{rlist},
 					UserInput:  0,
 				}
 			}
