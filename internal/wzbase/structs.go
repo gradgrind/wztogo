@@ -51,6 +51,8 @@ type Room struct {
 // Roomspec describes the room requirements for a course. The total number
 // of rooms required is len(Compulory) + len(Choices) + UserInput.
 type RoomSpec struct {
+	RoomGroup int // Only if the Compulsory list contains exactly the rooms
+	// of a room-group, this will be the reference to that room-group.
 	Compulsory []int
 	Choices    [][]int
 	UserInput  int // or []int ?
@@ -83,13 +85,6 @@ type DivGroups struct {
 	Tag    string
 	Groups []int
 }
-
-/*
-type DivIndexGroups struct {
-	Div    int
-	Groups []int
-}
-*/
 
 type ClassDivGroups struct {
 	Class  int

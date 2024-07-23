@@ -3,6 +3,7 @@ package w365
 import (
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -95,7 +96,6 @@ func (w365data *W365Data) read_activities() {
 		// rooms requiring manual input. The wzbase.RoomSpec structure
 		// should be able to cater for this. Waldorf 365 only supports a
 		// subset.
-
 		var roomspec wzbase.RoomSpec
 		rfield := node[w365_PreferredRooms]
 		if rfield == "" {
@@ -112,18 +112,50 @@ func (w365data *W365Data) read_activities() {
 			}
 			if len(rlist) == 1 {
 				// A single compulsory room (list)
-				roomspec = wzbase.RoomSpec{
-					Compulsory: []int{rlist[0]},
-					Choices:    [][]int{},
-					UserInput:  0,
+				rc := rlist[0]
+				// Is it a room-group?
+				srlist := w365data.GetNode(rc).(wzbase.Room).SUBROOMS
+				if len(srlist) == 0 {
+					// It is a "real" room.
+					roomspec = wzbase.RoomSpec{
+						Compulsory: []int{rc},
+						Choices:    [][]int{},
+					}
+				} else {
+					// It is a room-group
+					roomspec = wzbase.RoomSpec{
+						RoomGroup:  rc,
+						Compulsory: srlist,
+						Choices:    [][]int{},
+					}
 				}
 			} else {
-				// A single room-choice list
+				// A single room-choice list. Having a room-group in here
+				// would be a bit unpleasant to handle, so I won't allow
+				// it at the moment.
+				for _, rc := range rlist {
+					if len(w365data.GetNode(rc).(wzbase.Room).SUBROOMS) > 0 {
+						log.Printf(
+							"\n=========================================\n"+
+								"  !!!  Room-group in room-choice list:\n"+
+								" Subject %s, Group %s: %+v\n"+
+								"=========================================\n",
+							stlist, cdglist.Print(w365data), rlist,
+						)
+						roomspec = wzbase.RoomSpec{
+							Compulsory: []int{},
+							Choices:    [][]int{},
+							UserInput:  1,
+						}
+						goto recover1
+					}
+				}
 				roomspec = wzbase.RoomSpec{
 					Compulsory: []int{},
 					Choices:    [][]int{rlist},
 					UserInput:  0,
 				}
+			recover1:
 			}
 		}
 		//fmt.Printf("    --> Rooms: %+v\n", roomspec)
@@ -282,11 +314,25 @@ func (w365data *W365Data) read_activities() {
 		var tlist []int // collect teacher indexes
 		tlist = append(tlist, basecourse.TEACHERS...)
 		baserooms := basecourse.ROOM_WISH
-		rspec := wzbase.RoomSpec{ // collect room indexes
-			Compulsory: baserooms.Compulsory,
-			Choices:    [][]int{},
-			UserInput:  0,
+		// Room handling is a bit intricate. If a room-group is present, it
+		// will only be retained when no further rooms are added, either as
+		// compulsory or choice rooms. Keep a set of all real rooms.
+		choiceroom := []int{}
+		if len(baserooms.Choices) > 0 {
+			// Keep only the first choice list. This avoids the increased
+			// complexity of anything more advanced, but in W365 only a
+			// single room-choice list is supported anyway.
+			choiceroom = baserooms.Choices[0]
 		}
+		// Actually, both choice list and compulsory rooms are not possible
+		// in W365, but it does no harm to do without an "else" here.
+		room_group0 := baserooms.RoomGroup
+		room_group0_list := baserooms.Compulsory
+		realrooms := room_group0_list
+		// realrooms will need to be compacted later
+		// If there is a room group containing all the compulsory – and
+		// choice – rooms, it can be retained as the single room for the
+		// block.
 		for _, xc := range xb.components {
 			xci := w365data.NodeMap[xc]
 			xcl = append(xcl, xci)
@@ -331,14 +377,16 @@ func (w365data *W365Data) read_activities() {
 				tlist = append(tlist, ti)
 			}
 			// + Deal with the rooms.
-		rloop1:
-			for _, ri := range course.ROOM_WISH.Compulsory {
-				for _, ri0 := range rspec.Compulsory {
-					if ri0 == ri {
-						continue rloop1
+			rwcomp := course.ROOM_WISH.Compulsory
+			if len(rwcomp) > 0 {
+				realrooms = append(realrooms, rwcomp...)
+				if course.ROOM_WISH.RoomGroup > 0 {
+					// Keep hold of the largest room-group
+					if len(rwcomp) > len(room_group0_list) {
+						room_group0_list = rwcomp
+						room_group0 = course.ROOM_WISH.RoomGroup
 					}
 				}
-				rspec.Compulsory = append(rspec.Compulsory, ri)
 			}
 			// Handling choices is somewhat tricky, to put it mildly ...
 			// Indeed it is not at all obvious how they should be handled
@@ -368,28 +416,26 @@ func (w365data *W365Data) read_activities() {
 					basecourse.Print(w365data))
 			}
 		}
-		if len(baserooms.Choices) == 1 {
-			// Attempt at doing something with room choice list in the
-			// base course ...
-			//TODO: any better ideas?
-			rclist := []int{}
-		rloop2:
-			for _, ri := range baserooms.Choices[0] {
-				// Waldorf 365 can only provide a single list.
-				for _, ri0 := range rspec.Compulsory {
-					if ri0 == ri {
-						continue rloop2
-					}
-				}
-				rclist = append(rclist, ri)
-			}
-			if len(rclist) > 0 {
-				if len(rclist) == 1 {
-					rspec.Compulsory = append(rspec.Compulsory, rclist[0])
-				} else {
-					rspec.Choices = [][]int{rclist}
+		// Draw all the room information together.
+		slices.Sort(realrooms)
+		realrooms = slices.Compact(realrooms)
+		rspec := wzbase.RoomSpec{
+			Compulsory: realrooms,
+		}
+		if len(choiceroom) > 0 {
+			for _, rc := range choiceroom {
+				if slices.Contains(realrooms, rc) {
+					goto nochoice
 				}
 			}
+			slices.Sort(choiceroom)
+			rspec.Choices = [][]int{choiceroom}
+		nochoice:
+		}
+		if len(room_group0_list) > 0 &&
+			len(realrooms) == len(room_group0_list) {
+			// Only in this case does it make sense to use the room group.
+			rspec.RoomGroup = room_group0
 		}
 		if len(basegroups) == 0 {
 			basegroups = blockgroups

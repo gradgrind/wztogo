@@ -54,13 +54,33 @@ func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
 	for _, ti := range fetinfo.wzdb.TableMap["ROOMS"] {
 		n := fetinfo.wzdb.GetNode(ti).(wzbase.Room)
-		rooms = append(rooms, fetRoom{
-			Name:      n.ID,
-			Long_Name: n.NAME,
-			Capacity:  30000,
-			Virtual:   false,
-			Comments:  fetinfo.wzdb.SourceReferences[ti],
-		})
+		if len(n.SUBROOMS) == 0 {
+			rooms = append(rooms, fetRoom{
+				Name:      n.ID,
+				Long_Name: n.NAME,
+				Capacity:  30000,
+				Virtual:   false,
+				Comments:  fetinfo.wzdb.SourceReferences[ti],
+			})
+		} else {
+			// Make a virtual room
+			rrlist := []realRoomSet{}
+			for _, ri := range n.SUBROOMS {
+				rrlist = append(rrlist, realRoomSet{
+					Number_of_Real_Rooms: 1,
+					Real_Room:            []string{fetinfo.ref2fet[ri]},
+				})
+			}
+			rooms = append(rooms, fetRoom{
+				Name:                         n.ID,
+				Long_Name:                    n.NAME,
+				Capacity:                     30000,
+				Virtual:                      true,
+				Number_of_Sets_of_Real_Rooms: len(rrlist),
+				Set_of_Real_Rooms:            rrlist,
+				Comments:                     fetinfo.wzdb.SourceReferences[ti],
+			})
+		}
 	}
 	fetinfo.fetdata.Rooms_List = fetRoomsList{
 		Room: rooms,
@@ -111,6 +131,7 @@ func addRoomConstraint(fetinfo *fetInfo,
 				})
 			}
 		} else {
+			// A simple choice
 			rlist := []string{}
 			for _, ri := range roomspec.Choices[0] {
 				rlist = append(rlist, fetinfo.ref2fet[ri])
@@ -126,12 +147,22 @@ func addRoomConstraint(fetinfo *fetInfo,
 			}
 		}
 	} else {
-		// Multiple rooms, use a virtual room.
+		// Multiple rooms, use a new virtual room.
+		// If a compulsory room is virtual, extract its component rooms.
+		compulsory := []int{}
+		for _, ri := range roomspec.Compulsory {
+			srl := fetinfo.wzdb.GetNode(ri).(wzbase.Room).SUBROOMS
+			if len(srl) == 0 {
+				compulsory = append(compulsory, ri)
+			} else {
+				compulsory = append(compulsory, srl...)
+			}
+		}
 		// Make a "key" for a map to preserve virtual rooms in case the
 		// same one is needed more than once.
 		allrooms := []string{}
-		crooms := make([]int, len(roomspec.Compulsory))
-		copy(crooms, roomspec.Compulsory)
+		crooms := make([]int, len(compulsory))
+		copy(crooms, compulsory)
 		slices.Sort(crooms)
 		for _, ri := range crooms {
 			allrooms = append(allrooms, strconv.Itoa(ri))
