@@ -145,5 +145,9 @@ func make_fet_file(wzdb *wzbase.WZdata,
 	//getCourses(&fetinfo)
 	getActivities(&fetinfo, activities, course2activities)
 	gap_subject_activities(&fetinfo, subject_activities)
+
+	//TODO: lunch breaks
+	//TODO: minimize gaps
+
 	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }

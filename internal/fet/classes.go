@@ -66,6 +66,7 @@ func getClasses(fetinfo *fetInfo) {
 	//	trefs := wzdb.TableMap["CLASSES"]
 	items := []fetClass{}
 	natimes := []studentsNotAvailable{}
+	lunchperiods := fetinfo.wzdb.Schooldata["LUNCHBREAK"].([]int)
 	for _, c := range fetinfo.wzdb.TableMap["CLASSES"] {
 		//    for _, ti := range trefs {
 		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
@@ -119,14 +120,32 @@ func getClasses(fetinfo *fetInfo) {
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 
 		// "Not available" times
+		// Seek also the days where a lunch-break is necessary – those days
+		// where none of the lunch-break periods are blocked.
+		lbdays := []int{}
 		nats := []notAvailableTime{}
 		for d, dna := range cl.NOT_AVAILABLE {
+			lbd := true
 			for _, h := range dna {
+				if lbd {
+					for _, hh := range lunchperiods {
+						if hh == h {
+							lbd = false
+							break
+						}
+					}
+				}
 				nats = append(nats,
 					notAvailableTime{
 						Day: fetinfo.days[d], Hour: fetinfo.hours[h]})
 			}
+			if lbd {
+				lbdays = append(lbdays, d)
+			}
 		}
+		//TODO: Generate constraints, or lunch-break lessons, accordingly.
+		fmt.Printf("??? class %s: %+v\n", cl.SORTING, lbdays)
+
 		if len(nats) > 0 {
 			natimes = append(natimes,
 				studentsNotAvailable{
