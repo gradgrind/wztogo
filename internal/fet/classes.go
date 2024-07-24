@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
+	"strings"
 )
 
 //type fetCategory struct {
@@ -67,6 +68,8 @@ func getClasses(fetinfo *fetInfo) {
 	items := []fetClass{}
 	natimes := []studentsNotAvailable{}
 	lunchperiods := fetinfo.wzdb.Schooldata["LUNCHBREAK"].([]int)
+	lunchconstraints := []lunchBreak{}
+	maxgaps := []maxGapsPerWeek{}
 	for _, c := range fetinfo.wzdb.TableMap["CLASSES"] {
 		//    for _, ti := range trefs {
 		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
@@ -119,6 +122,13 @@ func getClasses(fetinfo *fetInfo) {
 		*/
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 
+		// *****
+		// The following constraints don't concern dummy classes ending
+		// in "X".
+		if strings.HasSuffix(cname, "X") {
+			continue
+		}
+
 		// "Not available" times
 		// Seek also the days where a lunch-break is necessary – those days
 		// where none of the lunch-break periods are blocked.
@@ -143,8 +153,6 @@ func getClasses(fetinfo *fetInfo) {
 				lbdays = append(lbdays, d)
 			}
 		}
-		//TODO: Generate constraints, or lunch-break lessons, accordingly.
-		fmt.Printf("??? class %s: %+v\n", cl.SORTING, lbdays)
 
 		if len(nats) > 0 {
 			natimes = append(natimes,
@@ -157,9 +165,36 @@ func getClasses(fetinfo *fetInfo) {
 				})
 		}
 		//fmt.Printf("==== %s: %+v\n", cname, nats)
+
+		// Limit gaps on a weekly basis.
+		mgpw := 0 //TODO: An additional tweak may be needed for some classes.
+		// Handle lunch breaks: The current approach counts lunch breaks as
+		// gaps, so the gaps-per-week must be adjusted accordingly.
+		if len(lbdays) > 0 {
+			// Need lunch break(s).
+			// This uses a general "max-lessons-in-interval" constraint.
+			// As an alternative, adding dummy lessons (with time constraint)
+			// can offer some advantages, like easing gap handling.
+			// Set max-gaps-per-week accordingly.
+			if lunch_break(fetinfo, &lunchconstraints, cname, lunchperiods) {
+				mgpw += len(lbdays)
+			}
+		}
+		// Add the gaps constraint.
+		maxgaps = append(maxgaps, maxGapsPerWeek{
+			Weight_Percentage: 100,
+			Max_Gaps:          mgpw,
+			Students:          cname,
+			Active:            true,
+		})
 	}
 	fetinfo.fetdata.Students_List = fetStudentsList{
 		Year: items,
 	}
-	fetinfo.fetdata.Time_Constraints_List.ConstraintStudentsSetNotAvailableTimes = natimes
+	fetinfo.fetdata.Time_Constraints_List.
+		ConstraintStudentsSetNotAvailableTimes = natimes
+	fetinfo.fetdata.Time_Constraints_List.
+		ConstraintStudentsSetMaxHoursDailyInInterval = lunchconstraints
+	fetinfo.fetdata.Time_Constraints_List.
+		ConstraintStudentsSetMaxGapsPerWeek = maxgaps
 }

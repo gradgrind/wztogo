@@ -52,12 +52,15 @@ type fetInfo struct {
 }
 
 type timeConstraints struct {
-	XMLName                                 xml.Name `xml:"Time_Constraints_List"`
-	ConstraintBasicCompulsoryTime           basicTimeConstraint
-	ConstraintStudentsSetNotAvailableTimes  []studentsNotAvailable
-	ConstraintTeacherNotAvailableTimes      []teacherNotAvailable
-	ConstraintActivityPreferredStartingTime []startingTime
-	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
+	XMLName xml.Name `xml:"Time_Constraints_List"`
+	//
+	ConstraintBasicCompulsoryTime                basicTimeConstraint
+	ConstraintStudentsSetNotAvailableTimes       []studentsNotAvailable
+	ConstraintTeacherNotAvailableTimes           []teacherNotAvailable
+	ConstraintActivityPreferredStartingTime      []startingTime
+	ConstraintMinDaysBetweenActivities           []minDaysBetweenActivities
+	ConstraintStudentsSetMaxHoursDailyInInterval []lunchBreak
+	ConstraintStudentsSetMaxGapsPerWeek          []maxGapsPerWeek
 }
 
 type basicTimeConstraint struct {
@@ -132,22 +135,14 @@ func make_fet_file(wzdb *wzbase.WZdata,
 		},
 	}
 
-	//	fetdata.Time_Constraints_List.constraints = append(
-	//		fetdata.Time_Constraints_List.constraints,
-	//		basicTimeConstraint{Weight_Percentage: 100, Active: true},
-	//	)
 	getDays(&fetinfo)
 	getHours(&fetinfo)
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
 	getRooms(&fetinfo)
 	getClasses(&fetinfo)
-	//getCourses(&fetinfo)
 	getActivities(&fetinfo, activities, course2activities)
 	gap_subject_activities(&fetinfo, subject_activities)
-
-	//TODO: lunch breaks
-	//TODO: minimize gaps
 
 	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }

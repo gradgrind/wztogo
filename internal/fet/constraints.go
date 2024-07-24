@@ -3,6 +3,7 @@ package fet
 import (
 	"encoding/xml"
 	"gradgrind/wztogo/internal/wzbase"
+	"log"
 )
 
 type startingTime struct {
@@ -54,4 +55,53 @@ func gap_subject_activities(fetinfo *fetInfo,
 		})
 	}
 	fetinfo.fetdata.Time_Constraints_List.ConstraintMinDaysBetweenActivities = gsalist
+}
+
+type lunchBreak struct {
+	XMLName             xml.Name `xml:"ConstraintStudentsSetMaxHoursDailyInInterval"`
+	Weight_Percentage   int
+	Students            string
+	Interval_Start_Hour string
+	Interval_End_Hour   string
+	Maximum_Hours_Daily int
+	Active              bool
+}
+
+func lunch_break(
+	fetinfo *fetInfo,
+	lbconstraints *([]lunchBreak),
+	cname string,
+	lunchperiods []int,
+) bool {
+	// Assume the lunch periods are sorted, but not necessarily contiguous,
+	// which is necessary for this constraint.
+	lb1 := lunchperiods[0]
+	lb2 := lunchperiods[len(lunchperiods)-1] + 1
+	if lb2-lb1 != len(lunchperiods) {
+		log.Printf(
+			"\n=========================================\n"+
+				"  !!!  INCOMPATIBLE DATA: lunch periods not contiguous,\n"+
+				"       can't generate lunch-break constraint for class %s.\n"+
+				"=========================================\n",
+			cname)
+		return false
+	}
+	lb := lunchBreak{
+		Weight_Percentage:   100,
+		Students:            cname,
+		Interval_Start_Hour: fetinfo.hours[lb1],
+		Interval_End_Hour:   fetinfo.hours[lb2],
+		Maximum_Hours_Daily: len(lunchperiods) - 1,
+		Active:              true,
+	}
+	*lbconstraints = append(*lbconstraints, lb)
+	return true
+}
+
+type maxGapsPerWeek struct {
+	XMLName           xml.Name `xml:"ConstraintStudentsSetMaxGapsPerWeek"`
+	Weight_Percentage int
+	Max_Gaps          int
+	Students          string
+	Active            bool
 }

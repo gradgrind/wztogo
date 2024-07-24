@@ -75,7 +75,7 @@ func TestFet(t *testing.T) {
 
 	// ********** Build the fet file **********
 	xmlitem := make_fet_file(&wzdb, alist, course2activities, sgalist)
-	fmt.Printf("\n*** fet:\n%v\n", xmlitem)
+	//fmt.Printf("\n*** fet:\n%v\n", xmlitem)
 	fetfile0 := "../_testdata/test.fet"
 	fetfile, err := filepath.Abs(fetfile0)
 	if err != nil {
