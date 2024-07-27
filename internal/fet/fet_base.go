@@ -35,8 +35,7 @@ type fet struct {
 	Rooms_List       fetRoomsList
 	Students_List    fetStudentsList
 	//Buildings_List
-	//TODO:
-	//	Rooms_List fetRoomsList
+	Activity_Tags_List     fetActivityTags
 	Activities_List        fetActivitiesList
 	Time_Constraints_List  timeConstraints
 	Space_Constraints_List spaceConstraints
@@ -61,6 +60,7 @@ type timeConstraints struct {
 	ConstraintMinDaysBetweenActivities           []minDaysBetweenActivities
 	ConstraintStudentsSetMaxHoursDailyInInterval []lunchBreak
 	ConstraintStudentsSetMaxGapsPerWeek          []maxGapsPerWeek
+	ConstraintStudentsSetMinHoursDaily           []minLessonsPerDay
 }
 
 type basicTimeConstraint struct {

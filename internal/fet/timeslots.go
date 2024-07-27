@@ -2,6 +2,8 @@ package fet
 
 import (
 	"encoding/xml"
+	"fmt"
+	"gradgrind/wztogo/internal/wzbase"
 )
 
 type fetDay struct {
@@ -16,14 +18,15 @@ type fetDaysList struct {
 }
 
 type fetHour struct {
-	XMLName xml.Name `xml:"Hour"`
-	Name    string
+	XMLName   xml.Name `xml:"Hour"`
+	Name      string
+	Long_Name string
 }
 
 type fetHoursList struct {
 	XMLName         xml.Name `xml:"Hours_List"`
 	Number_of_Hours int
-	Day             []fetHour
+	Hour            []fetHour
 }
 
 /*
@@ -89,12 +92,17 @@ func getHours(fetinfo *fetInfo) {
 	hlist := []string{}
 	for _, ti := range fetinfo.wzdb.TableMap["HOURS"] {
 		h := fetinfo.ref2fet[ti]
-		hours = append(hours, fetHour{Name: h})
+		hn := fetinfo.wzdb.GetNode(ti).(wzbase.Hour)
+		hours = append(hours, fetHour{
+			Name: hn.ID,
+			Long_Name: fmt.Sprintf("%s@%s-%s",
+				hn.NAME, hn.START_TIME, hn.END_TIME),
+		})
 		hlist = append(hlist, h)
 	}
 	fetinfo.hours = hlist
 	fetinfo.fetdata.Hours_List = fetHoursList{
 		Number_of_Hours: len(hours),
-		Day:             hours,
+		Hour:            hours,
 	}
 }

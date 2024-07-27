@@ -44,6 +44,17 @@ type Activities_List struct {
 	Activity []Activity
 }
 
+type Room struct {
+	//XMLName xml.Name `xml:"Room"`
+	Name  string
+	Id365 string `xml:"Comments"`
+}
+
+type Rooms_List struct {
+	//XMLName xml.Name `xml:"Rooms_List"`
+	Room []Room
+}
+
 type ConstraintActivityPreferredStartingTime struct {
 	//XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
 	Activity_Id        int
@@ -76,6 +87,7 @@ type Result struct {
 	Days_List              Days_List
 	Hours_List             Hours_List
 	Activities_List        Activities_List
+	Rooms_List             Rooms_List
 	Time_Constraints_List  Time_Constraints_List
 	Space_Constraints_List Space_Constraints_List
 }
@@ -113,8 +125,23 @@ func to_w365(fetpath string) string {
 	for _, a := range v.Activities_List.Activity {
 		amap[a.Id] = a
 	}
+	roommap := map[string]string{}
+	for _, r := range v.Rooms_List.Room {
+		roommap[r.Name] = r.Id365
+	}
 	yearid := v.YearId365
 	tim := time.Now().Format("2006-01-02T15:04:05")
+
+	room_allocation := map[int]string{}
+	for _, rdata := range v.Space_Constraints_List.
+		ConstraintActivityPreferredRoom {
+		//fmt.Printf("  -- %+v\n", rdata)
+		ai := rdata.Activity_Id
+		r := rdata.Room
+		//rr := rdata.Real_Room
+		room_allocation[ai] = roommap[r]
+	}
+
 	lessons := []string{}
 	lids := []string{}
 	for _, tdata := range v.Time_Constraints_List.ConstraintActivityPreferredStartingTime {
@@ -135,9 +162,9 @@ func to_w365(fetpath string) string {
 				fmt.Sprintf("Fixed=%t", fixed),
 				fmt.Sprintf("Id=%s", lid),
 				fmt.Sprintf("LastChanged=%s", tim),
-				//TODO: It might be sensible to pass at least the single rooms.
-				// Otherwise, retention of the room-groups would be helpful!
-				//fmt.Sprintf("LocalRooms=%s", room),
+				// W365 seems to accept only single rooms, which may be
+				// room-groups, so just use the translation table.
+				fmt.Sprintf("LocalRooms=%s", room_allocation[aid]),
 				"",
 			}
 			lessons = append(lessons, les...)

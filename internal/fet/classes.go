@@ -4,8 +4,13 @@ import (
 	"encoding/xml"
 	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
+	"log"
+	"strconv"
 	"strings"
 )
+
+const GROUP_SEP = ","
+const DIV_SEP = "|"
 
 //type fetCategory struct {
 //	//XMLName             xml.Name `xml:"Category"`
@@ -70,6 +75,7 @@ func getClasses(fetinfo *fetInfo) {
 	lunchperiods := fetinfo.wzdb.Schooldata["LUNCHBREAK"].([]int)
 	lunchconstraints := []lunchBreak{}
 	maxgaps := []maxGapsPerWeek{}
+	minlessons := []minLessonsPerDay{}
 	for _, c := range fetinfo.wzdb.TableMap["CLASSES"] {
 		//    for _, ti := range trefs {
 		//		cl := wzdb.NodeList[wzdb.IndexMap[ti]].Node.(wzbase.Class)
@@ -107,10 +113,22 @@ func getClasses(fetinfo *fetInfo) {
 				})
 			}
 		}
+
+		slcum := []string{}
+		for _, divl := range fetinfo.wzdb.ActiveDivisions[c] {
+			strcum := []string{}
+			for _, i := range divl {
+				strcum = append(strcum, fetinfo.ref2fet[i])
+			}
+			slcum = append(slcum, strings.Join(strcum, GROUP_SEP))
+		}
+		strdivs := strings.Join(slcum, DIV_SEP)
+		fmt.Printf("??? ActiveDivisions %s (%s): %+v\n",
+			cname, cl.SORTING, strdivs)
 		items = append(items, fetClass{
-			Name: cname,
-			//Comments: calt,
-			Group: groups,
+			Name:     cname,
+			Comments: strdivs,
+			Group:    groups,
 		})
 		/*
 			items = append(items, fetClass{
@@ -122,7 +140,7 @@ func getClasses(fetinfo *fetInfo) {
 		*/
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 
-		// *****
+		// ************************************************************
 		// The following constraints don't concern dummy classes ending
 		// in "X".
 		if strings.HasSuffix(cname, "X") {
@@ -187,6 +205,20 @@ func getClasses(fetinfo *fetInfo) {
 			Students:          cname,
 			Active:            true,
 		})
+
+		// Minimum lessons per day
+		mlpd0 := cl.CONSTRAINTS["MinLessonsPerDay"]
+		mlpd, err := strconv.Atoi(mlpd0)
+		if err != nil {
+			log.Fatalf("INVALID MinLessonsPerDay: %s // %v\n", mlpd0, err)
+		}
+		minlessons = append(minlessons, minLessonsPerDay{
+			Weight_Percentage:   100,
+			Minimum_Hours_Daily: mlpd,
+			Students:            cname,
+			Allow_Empty_Days:    false,
+			Active:              true,
+		})
 	}
 	fetinfo.fetdata.Students_List = fetStudentsList{
 		Year: items,
@@ -197,4 +229,6 @@ func getClasses(fetinfo *fetInfo) {
 		ConstraintStudentsSetMaxHoursDailyInInterval = lunchconstraints
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintStudentsSetMaxGapsPerWeek = maxgaps
+	fetinfo.fetdata.Time_Constraints_List.
+		ConstraintStudentsSetMinHoursDaily = minlessons
 }

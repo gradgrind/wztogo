@@ -2,7 +2,9 @@ package fet
 
 import (
 	"encoding/xml"
+	"fmt"
 	"gradgrind/wztogo/internal/wzbase"
+	"slices"
 )
 
 type fetActivity struct {
@@ -10,6 +12,7 @@ type fetActivity struct {
 	Id                int
 	Teacher           []string
 	Subject           string
+	Activity_Tag      string `xml:",omitempty"`
 	Students          []string
 	Active            bool
 	Total_Duration    int
@@ -23,11 +26,36 @@ type fetActivitiesList struct {
 	Activity []fetActivity
 }
 
+type fetActivityTag struct {
+	XMLName   xml.Name `xml:"Activity_Tag"`
+	Name      string
+	Printable bool
+}
+
+type fetActivityTags struct {
+	XMLName      xml.Name `xml:"Activity_Tags_List"`
+	Activity_Tag []fetActivityTag
+}
+
 // Generate the fet activties.
 func getActivities(fetinfo *fetInfo,
 	activities []wzbase.Activity,
 	course2activities map[int][]int,
 ) {
+	// ************* Start with the activity tags
+	tags := []fetActivityTag{}
+	s2tag := map[string]string{}
+	for _, ts := range tagged_subjects {
+		tag := fmt.Sprintf("Tag_%s", ts)
+		s2tag[ts] = tag
+		tags = append(tags, fetActivityTag{
+			Name: tag,
+		})
+	}
+	fetinfo.fetdata.Activity_Tags_List = fetActivityTags{
+		Activity_Tag: tags,
+	}
+	// ************* Now the activities
 	fixed_rooms := []fixedRoom{}
 	room_choices := []roomChoice{}
 	virtual_rooms := map[string]string{}
@@ -64,11 +92,16 @@ func getActivities(fetinfo *fetInfo,
 				glist = append(glist, c+"."+fetinfo.ref2fet[cg.GIX])
 			}
 		}
+		atag := ""
+		if slices.Contains(tagged_subjects, sbj) {
+			atag = fmt.Sprintf("Tag_%s", sbj)
+		}
 		course_act[ci] = fetActivity{
 			//Id:                i + 1, // fet indexing starts at 1
 			Teacher:           tlist,
 			Subject:           sbj,
 			Students:          glist,
+			Activity_Tag:      atag,
 			Active:            true,
 			Total_Duration:    td,
 			Activity_Group_Id: aid,

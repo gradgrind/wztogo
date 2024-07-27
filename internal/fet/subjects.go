@@ -5,6 +5,10 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 )
 
+// TODO: At present this is used for adding activity-tags to activities
+// for these subjects (see courses.go). This is just a temporary hack ...
+var tagged_subjects = []string{"Eu", "Sp"}
+
 type fetSubject struct {
 	XMLName  xml.Name `xml:"Subject"`
 	Name     string

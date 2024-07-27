@@ -105,3 +105,12 @@ type maxGapsPerWeek struct {
 	Students          string
 	Active            bool
 }
+
+type minLessonsPerDay struct {
+	XMLName             xml.Name `xml:"ConstraintStudentsSetMinHoursDaily"`
+	Weight_Percentage   int
+	Minimum_Hours_Daily int
+	Students            string
+	Allow_Empty_Days    bool
+	Active              bool
+}
