@@ -260,10 +260,40 @@ type WZdata struct {
 	//SbjAGActivities  map[int]map[int]map[int]bool
 }
 
-func (wzdb WZdata) GetNode(ref int) interface{} {
+func (wzdb *WZdata) GetNode(ref int) interface{} {
 	return wzdb.NodeList[wzdb.IndexMap[ref]].Node
 }
 
 type NodeGetter interface {
 	GetNode(ref int) interface{}
+}
+
+func (wzdb *WZdata) Ref2IdMap() map[int]string {
+	// Build mapping: ref-index -> Short key (ID)
+	ref2id := map[int]string{}
+	for ref := range wzdb.IndexMap {
+		item := wzdb.NodeList[wzdb.IndexMap[ref]]
+		node := item.Node
+		var v string
+		switch item.Table {
+		case "DAYS":
+			v = node.(Day).ID
+		case "HOURS":
+			v = node.(Hour).ID
+		case "SUBJECTS":
+			v = node.(Subject).ID
+		case "TEACHERS":
+			v = node.(Teacher).ID
+		case "ROOMS":
+			v = node.(Room).ID
+		case "CLASSES":
+			v = node.(Class).ID
+		case "GROUPS":
+			v = node.(Group).ID
+		default:
+			continue
+		}
+		ref2id[ref] = v
+	}
+	return ref2id
 }

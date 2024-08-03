@@ -123,8 +123,8 @@ func getClasses(fetinfo *fetInfo) {
 			slcum = append(slcum, strings.Join(strcum, GROUP_SEP))
 		}
 		strdivs := strings.Join(slcum, DIV_SEP)
-		fmt.Printf("??? ActiveDivisions %s (%s): %+v\n",
-			cname, cl.SORTING, strdivs)
+		//fmt.Printf("??? ActiveDivisions %s (%s): %+v\n",
+		//	cname, cl.SORTING, strdivs)
 		items = append(items, fetClass{
 			Name:     cname,
 			Comments: strdivs,

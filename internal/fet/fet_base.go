@@ -91,31 +91,8 @@ func make_fet_file(wzdb *wzbase.WZdata,
 	fmt.Printf("\n????? %+v\n", wzdb.Schooldata)
 
 	// Build ref-index -> fet-key mapping
-	ref2fet := map[int]string{}
-	for ref := range wzdb.IndexMap {
-		item := wzdb.NodeList[wzdb.IndexMap[ref]]
-		node := item.Node
-		var v string
-		switch item.Table {
-		case "DAYS":
-			v = node.(wzbase.Day).ID
-		case "HOURS":
-			v = node.(wzbase.Hour).ID
-		case "SUBJECTS":
-			v = node.(wzbase.Subject).ID
-		case "TEACHERS":
-			v = node.(wzbase.Teacher).ID
-		case "ROOMS":
-			v = node.(wzbase.Room).ID
-		case "CLASSES":
-			v = node.(wzbase.Class).ID
-		case "GROUPS":
-			v = node.(wzbase.Group).ID
-		default:
-			continue
-		}
-		ref2fet[ref] = v
-	}
+	ref2fet := wzdb.Ref2IdMap()
+
 	fetinfo := fetInfo{
 		wzdb:    wzdb,
 		ref2fet: ref2fet,

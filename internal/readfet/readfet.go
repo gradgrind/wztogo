@@ -150,6 +150,9 @@ func to_w365(fetpath string) string {
 		h := hourmap[tdata.Preferred_Hour]
 		fixed := tdata.Permanently_Locked
 		a := amap[aid]
+		if a.Id365 == "" {
+			continue
+		}
 		for i := range a.Duration {
 			lid := uuid.NewString()
 			lids = append(lids, lid)
