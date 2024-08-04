@@ -6,6 +6,7 @@ import (
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 )
@@ -34,9 +35,8 @@ type Timetable struct {
 func PrintClasses(wzdb *wzbase.WZdata,
 	plan_name string,
 	activities []wzbase.Activity,
-	filepath string,
+	outpath string,
 ) {
-	var tiles []Tile
 	pages := [][]interface{}{}
 	//
 
@@ -54,7 +54,37 @@ func PrintClasses(wzdb *wzbase.WZdata,
 			room_groups[ri] = rglist
 		}
 	}
+
+	// Class-group infrastructure
+	divmap := map[string][][]string{}
+	for c, ad := range wzdb.ActiveDivisions {
+		divlist := [][]string{}
+		for _, div := range ad {
+			gs := []string{}
+			for _, g := range div {
+				gs = append(gs, ref2id[g])
+			}
+			divlist = append(divlist, gs)
+		}
+		divmap[ref2id[c]] = divlist
+		fmt.Printf(" $$$ AD %s: %+v\n", ref2id[c], divlist)
+	}
+
+	type chip struct {
+		class  string
+		groups []string
+		offset int
+		parts  int
+		total  int
+	}
+
+	// Generate the tiles.
+	classTiles := map[string][]Tile{}
 	for _, a := range activities {
+		if a.Day < 0 {
+			// Unplaced activity, skip it.
+			continue
+		}
 		// Gather the rooms.
 		rooms := []string{}
 		if len(a.Rooms) == 0 {
@@ -95,42 +125,111 @@ func PrintClasses(wzdb *wzbase.WZdata,
 			teacher = strings.Join(teachers, ",")
 		}
 
-		// Is there any way of associating teachers with particular (sub)groups?
-		// Probably not.
+		//TODO: Is there any way of associating teachers with particular
+		// (sub)groups? Probably not.
 
 		// Gather student groups.
 		classes := map[string][]string{} // mapping: class -> list of groups
 		for _, cg := range a.Groups {
 			c := ref2id[cg.CIX]
 			g := ref2id[cg.GIX]
-			gl, ok := classes[c]
-			if ok {
-				//TODO: Check for clashes? Or is that done previously?
-				classes[c] = append(gl, g)
-			} else if g == "" {
-				log.Println("++ Full class")
-				classes[c] = []string{}
+			// Assume the groups are valid
+			if g == "" {
+				classes[c] = nil
 			} else {
-				classes[c] = []string{g}
+				classes[c] = append(classes[c], g)
+			}
+			/*
+				gl, ok := classes[c]
+				if ok {
+					// Assume the groups are valid
+					classes[c] = append(gl, g)
+				} else if g == "" {
+					classes[c] = nil
+				} else {
+					classes[c] = []string{g}
+				}
+			*/
+		}
+
+		chips := []chip{}
+		for c, glist := range classes {
+			if len(glist) == 0 {
+				// whole class
+				chips = append(chips, chip{c, nil, 0, 1, 1})
+				continue
+			}
+			n := 0
+			start := 0
+			gs := []string{}
+			for _, div := range divmap[c] {
+				for i, g := range div {
+					if slices.Contains(glist, g) {
+						n += 1
+						if (start + len(gs)) == i {
+							gs = append(gs, g)
+							continue
+						}
+						if len(gs) > 0 {
+							chips = append(chips, chip{c, gs, start, len(gs), len(div)})
+						}
+						gs = []string{g}
+						start = i
+					}
+				}
+				if len(gs) > 0 {
+					chips = append(chips, chip{c, gs, start, len(gs), len(div)})
+				}
+				if n != 0 {
+					if n != len(glist) {
+						log.Fatalf("Groups in activity for class %s"+
+							" not in one division: %+v\n", c, glist)
+					}
+					break
+				}
+			}
+			if n == 0 {
+				log.Fatalf("Invalid groups in activity for class %s: %+v\n",
+					c, glist)
 			}
 		}
-		fmt.Printf("*** GROUPS (%s / %s): %#v\n", teacher, room, classes)
-	}
 
-	//
-	tiles = []Tile{
-		{Day: -1, Centre: "Tile 1"},
-		{Day: 0, Centre: "Tile 2"},
+		fmt.Printf("*** GROUPS (%s / %s): %+v\n", teacher, room, chips)
+
+		for _, c := range chips {
+			tile := Tile{
+				Day:      a.Day,
+				Hour:     a.Hour,
+				Duration: a.Duration,
+				Fraction: c.parts,
+				Offset:   c.offset,
+				Total:    c.total,
+				Centre:   ref2id[a.Subject],
+				TL:       teacher,
+				TR:       strings.Join(c.groups, ","),
+				BR:       room,
+			}
+			classTiles[c.class] = append(classTiles[c.class], tile)
+		}
+
 	}
-	pages = append(pages, []interface{}{"Class 1", tiles})
-	tiles = []Tile{
-		{Day: 1, Centre: "Tile 3"},
+	// Assume the classes table is sorted!
+	for _, ci := range wzdb.TableMap["CLASSES"] {
+		c := ref2id[ci]
+		ctiles, ok := classTiles[c]
+		if !ok {
+			continue
+		}
+		pages = append(pages, []interface{}{
+			fmt.Sprintf("Klasse %s", c),
+			ctiles,
+		})
+
 	}
-	pages = append(pages, []interface{}{"Class 2", tiles})
 
 	tt := Timetable{
 		Title:  "Stundenpläne der Klassen",
-		School: "Freie Michaelschule",
+		School: wzdb.Schooldata["SchoolName"].(string),
 		Plan:   plan_name,
 		Pages:  pages,
 	}
@@ -139,6 +238,22 @@ func PrintClasses(wzdb *wzbase.WZdata,
 		fmt.Println("error:", err)
 	}
 
-	os.Stdout.Write(b)
-	fmt.Println()
+	//os.Stdout.Write(b)
+	jsonpath := outpath + ".json"
+	err = os.WriteFile(jsonpath, b, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Wrote json to: %s\n", jsonpath)
+
+	out, err := exec.Command(
+		"typst",
+		"compile",
+		"--input ifile="+jsonpath,
+		"print_timetable.typ",
+		outpath+".pdf").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(out))
 }
