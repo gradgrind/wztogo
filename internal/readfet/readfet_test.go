@@ -10,8 +10,8 @@ import (
 )
 
 func TestToW365(t *testing.T) {
-	//fpath := "../_testdata/testx_data_and_timetable.fet"
 	fpath := "../_testdata/test_data_and_timetable.fet"
+	//fpath := "../_testdata/v003/test_data_and_timetable.fet"
 	abspath, err := filepath.Abs(fpath)
 	if err != nil {
 		log.Fatalf("Couldn't resolve file path: %s\n", fpath)

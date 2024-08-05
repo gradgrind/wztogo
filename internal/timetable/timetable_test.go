@@ -5,7 +5,6 @@ import (
 	"gradgrind/wztogo/internal/w365"
 	"gradgrind/wztogo/internal/wzbase"
 	"log"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestPrint(t *testing.T) {
-	datadir, err := filepath.Abs("../_testdata/")
+	datadir, err := filepath.Abs("../data/")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,20 +21,21 @@ func TestPrint(t *testing.T) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-	cmd := exec.Command("typst", "compile",
-		"--root", datadir,
-		"--input", "ifile=ptest.json",
-		filepath.Join(datadir, "print_timetable.typ"),
-		"ptest.pdf")
-	fmt.Printf(" ::: %s\n", cmd.String())
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	fmt.Println(string(output))
-	log.Fatalln("Quit")
-
+	/*
+		cmd := exec.Command("typst", "compile",
+			"--root", datadir,
+			"--input", "ifile="+filepath.Join("..", "out", "ptest.json"),
+			filepath.Join(datadir, "resources", "print_timetable.typ"),
+			filepath.Join(datadir, "..", "ptest.pdf"))
+		fmt.Printf(" ::: %s\n", cmd.String())
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		fmt.Println(string(output))
+		log.Fatalln("Quit")
+	*/
 	fmt.Println("\n############## TestPrint")
 	const defaultPath = "../_testdata/*.w365"
 	abspath, err := zenity.SelectFile(
@@ -93,6 +93,6 @@ func TestPrint(t *testing.T) {
 	fmt.Printf("\n Schedule: %s\n", plan_name)
 	wzbase.SetLessons(&wzdb, plan_name, alist, course2activities)
 
-	PrintClasses(&wzdb, plan_name, alist, strings.TrimSuffix(abspath,
-		filepath.Ext(abspath))+"_Klassen")
+	PrintClasses(&wzdb, plan_name, alist, datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
 }

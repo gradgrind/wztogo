@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -35,7 +36,8 @@ type Timetable struct {
 func PrintClasses(wzdb *wzbase.WZdata,
 	plan_name string,
 	activities []wzbase.Activity,
-	outpath string,
+	datadir string,
+	outpath string, // full path to output pdf
 ) {
 	pages := [][]interface{}{}
 	//
@@ -239,21 +241,22 @@ func PrintClasses(wzdb *wzbase.WZdata,
 	}
 
 	//os.Stdout.Write(b)
-	jsonpath := outpath + ".json"
+	jsonfile := filepath.Join("out", "tmp.json")
+	jsonpath := filepath.Join(datadir, jsonfile)
 	err = os.WriteFile(jsonpath, b, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Wrote json to: %s\n", jsonpath)
-
-	out, err := exec.Command(
-		"typst",
-		"compile",
-		"--input ifile="+jsonpath,
-		"print_timetable.typ",
-		outpath+".pdf").Output()
+	cmd := exec.Command("typst", "compile",
+		"--root", datadir,
+		"--input", "ifile="+filepath.Join("..", jsonfile),
+		filepath.Join(datadir, "resources", "print_timetable.typ"),
+		outpath)
+	fmt.Printf(" ::: %s\n", cmd.String())
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(out))
+	fmt.Println(string(output))
 }
