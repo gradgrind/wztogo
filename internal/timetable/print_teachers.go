@@ -146,7 +146,7 @@ func PrintTeachers(wzdb *wzbase.WZdata,
 	}
 
 	//os.Stdout.Write(b)
-	jsonfile := filepath.Join("out", "tmp.json")
+	jsonfile := filepath.Join("_out", "tmp.json")
 	jsonpath := filepath.Join(datadir, jsonfile)
 	err = os.WriteFile(jsonpath, b, 0666)
 	if err != nil {

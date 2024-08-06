@@ -24,7 +24,7 @@ func TestPrint(t *testing.T) {
 	/*
 		cmd := exec.Command("typst", "compile",
 			"--root", datadir,
-			"--input", "ifile="+filepath.Join("..", "out", "ptest.json"),
+			"--input", "ifile="+filepath.Join("..", "_out", "ptest.json"),
 			filepath.Join(datadir, "resources", "print_timetable.typ"),
 			filepath.Join(datadir, "..", "ptest.pdf"))
 		fmt.Printf(" ::: %s\n", cmd.String())
