@@ -95,4 +95,7 @@ func TestPrint(t *testing.T) {
 
 	PrintClasses(&wzdb, plan_name, alist, datadir,
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
+
+	PrintTeachers(&wzdb, plan_name, alist, datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Lehrer.pdf")
 }
