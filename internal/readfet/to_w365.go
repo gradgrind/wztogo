@@ -12,86 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Day struct {
-	//XMLName xml.Name `xml:"Day"`
-	Name string
-}
-
-type Days_List struct {
-	//XMLName xml.Name `xml:"Days_List"`
-	Day []Day
-}
-
-type Hour struct {
-	//XMLName xml.Name `xml:"Hour"`
-	Name string
-}
-
-type Hours_List struct {
-	//XMLName xml.Name `xml:"Hours_List"`
-	Hour []Hour
-}
-
-type Activity struct {
-	//XMLName xml.Name `xml:"Activity"`
-	Id       int
-	Duration int
-	Id365    string `xml:"Comments"`
-}
-
-type Activities_List struct {
-	//XMLName  xml.Name `xml:"Activities_List"`
-	Activity []Activity
-}
-
-type Room struct {
-	//XMLName xml.Name `xml:"Room"`
-	Name  string
-	Id365 string `xml:"Comments"`
-}
-
-type Rooms_List struct {
-	//XMLName xml.Name `xml:"Rooms_List"`
-	Room []Room
-}
-
-type ConstraintActivityPreferredStartingTime struct {
-	//XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
-	Activity_Id        int
-	Preferred_Day      string
-	Preferred_Hour     string
-	Permanently_Locked bool
-}
-
-type ConstraintActivityPreferredRoom struct {
-	//XMLName     xml.Name `xml:"ConstraintActivityPreferredRoom"`
-	Activity_Id int
-	Room        string
-	Real_Room   []string
-	//Permanently_Locked bool
-}
-
-type Time_Constraints_List struct {
-	//XMLName       xml.Name `xml:"Time_Constraints_List"`
-	ConstraintActivityPreferredStartingTime []ConstraintActivityPreferredStartingTime
-}
-
-type Space_Constraints_List struct {
-	//XMLName    xml.Name `xml:"Space_Constraints_List"`
-	ConstraintActivityPreferredRoom []ConstraintActivityPreferredRoom
-}
-
-type Result struct {
-	XMLName                xml.Name `xml:"fet"`
-	YearId365              string   `xml:"Comments"`
-	Days_List              Days_List
-	Hours_List             Hours_List
-	Activities_List        Activities_List
-	Rooms_List             Rooms_List
-	Time_Constraints_List  Time_Constraints_List
-	Space_Constraints_List Space_Constraints_List
-}
-
 func to_w365(fetpath string) string {
 	// Open the  XML file
 	xmlFile, err := os.Open(fetpath)
@@ -109,7 +29,7 @@ func to_w365(fetpath string) string {
 		log.Fatalf("XML error in %s:\n %v\n", fetpath, err)
 	}
 
-	//fmt.Printf(" --- Year-Id: %s\n", v.YearId365)
+	//fmt.Printf(" --- Year-Id: %s\n", v.Comments)
 
 	daymap := map[string]int{}
 	for i, d := range v.Days_List.Day {
@@ -127,9 +47,9 @@ func to_w365(fetpath string) string {
 	}
 	roommap := map[string]string{}
 	for _, r := range v.Rooms_List.Room {
-		roommap[r.Name] = r.Id365
+		roommap[r.Name] = r.Comments
 	}
-	yearid := v.YearId365
+	yearid := v.Comments
 	tim := time.Now().Format("2006-01-02T15:04:05")
 
 	room_allocation := map[int]string{}
@@ -150,7 +70,7 @@ func to_w365(fetpath string) string {
 		h := hourmap[tdata.Preferred_Hour]
 		fixed := tdata.Permanently_Locked
 		a := amap[aid]
-		if a.Id365 == "" {
+		if a.Comments == "" {
 			continue
 		}
 		for i := range a.Duration {
@@ -159,7 +79,7 @@ func to_w365(fetpath string) string {
 			les := []string{
 				"*Lesson",
 				fmt.Sprintf("ContainerId=%s", yearid),
-				fmt.Sprintf("Course=%s", a.Id365),
+				fmt.Sprintf("Course=%s", a.Comments),
 				fmt.Sprintf("Day=%d", d),
 				fmt.Sprintf("Hour=%d", h+i),
 				fmt.Sprintf("Fixed=%t", fixed),
