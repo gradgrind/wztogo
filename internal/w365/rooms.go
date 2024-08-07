@@ -36,7 +36,7 @@ func (w365data *W365Data) read_rooms() {
 			rg:      node[w365_RoomGroup], // component rooms ("list" of w365ids)
 		})
 	}
-	// Sort the subjects according to the Waldorf 365 ListPosition
+	// Sort the rooms according to the Waldorf 365 ListPosition
 	slices.SortFunc(xnodes, func(a, b xroom) int {
 		if a.sortnum <= b.sortnum {
 			return -1

@@ -16,6 +16,8 @@ func TestToW365(t *testing.T) {
 	if err != nil {
 		log.Fatalf("Couldn't resolve file path: %s\n", fpath)
 	}
+	ReadFet(abspath)
+
 	w365 := to_w365(abspath)
 	fmt.Println("====================================================")
 	//fmt.Println(w365)
