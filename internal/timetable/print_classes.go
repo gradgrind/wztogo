@@ -33,6 +33,18 @@ type Timetable struct {
 	Pages  [][]interface{}
 }
 
+// TODO: Try to find a form suitable for both fet and w365 which can be
+// passed into the timetable generator.
+type LessonData struct {
+	Duration  int
+	Subject   string
+	Teacher   []string
+	Students  []string
+	RealRooms []string
+	Day       int
+	Hour      int
+}
+
 func PrintClasses(wzdb *wzbase.WZdata,
 	plan_name string,
 	activities []wzbase.Activity,

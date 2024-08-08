@@ -2,6 +2,7 @@ package readfet
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -93,10 +94,12 @@ func ReadFetResult(fetpath string) FetResult {
 				a.Room = rdata.Room
 				a.RealRooms = rdata.Real_Room
 			}
+			//fmt.Printf("§ ROOMS: %s - %+v\n", a.Room, a.RealRooms)
 		} else {
 			a.Day = -1
 		}
 		amap[ai] = a
+		fmt.Printf("§ ACTIVITY: %+v\n", a)
 	}
 	// Gather all the data together
 	return FetResult{

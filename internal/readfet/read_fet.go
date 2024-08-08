@@ -30,9 +30,15 @@ type Hours_List struct {
 
 type Activity struct {
 	//XMLName xml.Name `xml:"Activity"`
-	Id       int
-	Duration int
-	Comments string
+	Id                int
+	Duration          int
+	Comments          string
+	Subject           string
+	Teacher           []string
+	Students          []string
+	Total_Duration    int
+	Activity_Group_Id int
+	Active            bool
 	// Added by constraints:
 	Room      string
 	RealRooms []string
@@ -72,10 +78,12 @@ type Teachers_List struct {
 	Teacher []Teacher
 }
 
-// A very special class and group structure is expected here. This form must
-// be generated specially, fet cannot do it itself!
-// TODO: It may be possible to support the normal fet group structure using
-// fet Categories.
+// Initially a very special class and group structure was expected here.
+// However, now the fet Categories can be read so that more normal fet files
+// are supported, but the code for the old version (using the Comments field)
+// is still present. It is tried if there are no Categories. This means that
+// the Comments field should not be used (for any other purpose) – at least
+// until the old code is removed.
 type ClassGroup struct {
 	XMLName xml.Name `xml:"Group"`
 	Name    string
@@ -91,7 +99,7 @@ type ClassData struct {
 	XMLName   xml.Name `xml:"Year"`
 	Name      string
 	Long_Name string
-	// At present the comments field is using to convey the divisions info.
+	// At present the comments field can be used to convey the divisions info.
 	Comments             string
 	Number_of_Categories int
 	Separator            string
