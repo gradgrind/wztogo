@@ -10,9 +10,10 @@ import (
 var tagged_subjects = []string{"Eu", "Sp"}
 
 type fetSubject struct {
-	XMLName  xml.Name `xml:"Subject"`
-	Name     string
-	Comments string
+	XMLName   xml.Name `xml:"Subject"`
+	Name      string
+	Long_Name string
+	Comments  string
 }
 
 type fetSubjectsList struct {
@@ -26,8 +27,8 @@ func getSubjects(fetinfo *fetInfo) {
 	for _, ti := range trefs {
 		n := fetinfo.wzdb.GetNode(ti).(wzbase.Subject)
 		items = append(items, fetSubject{
-			Name:     n.ID,
-			Comments: n.NAME,
+			Name:      n.ID,
+			Long_Name: n.NAME,
 		})
 	}
 	fetinfo.fetdata.Subjects_List = fetSubjectsList{

@@ -7,9 +7,10 @@ import (
 )
 
 type fetTeacher struct {
-	XMLName  xml.Name `xml:"Teacher"`
-	Name     string
-	Comments string
+	XMLName   xml.Name `xml:"Teacher"`
+	Name      string
+	Long_Name string
+	Comments  string
 }
 
 type fetTeachersList struct {
@@ -34,7 +35,7 @@ func getTeachers(fetinfo *fetInfo) {
 		n := fetinfo.wzdb.GetNode(ti).(wzbase.Teacher)
 		items = append(items, fetTeacher{
 			Name: n.ID,
-			Comments: fmt.Sprintf("%s %s",
+			Long_Name: fmt.Sprintf("%s %s",
 				n.FIRSTNAMES,
 				n.LASTNAME,
 			),
