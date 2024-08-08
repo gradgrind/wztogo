@@ -11,12 +11,13 @@ import (
 
 const GROUP_SEP = ","
 const DIV_SEP = "|"
+const CLASS_GROUP_SEP = "."
 
-//type fetCategory struct {
-//	//XMLName             xml.Name `xml:"Category"`
-//	Number_of_Divisions int
-//	Division            []string
-//}
+type fetCategory struct {
+	//XMLName             xml.Name `xml:"Category"`
+	Number_of_Divisions int
+	Division            []string
+}
 
 type fetSubgroup struct {
 	Name string // 13.m.MaE
@@ -33,16 +34,17 @@ type fetGroup struct {
 
 type fetClass struct {
 	//XMLName  xml.Name `xml:"Year"`
-	Name     string
-	Comments string
+	Name      string
+	Long_Name string
+	Comments  string
 	//Number_of_Students int (=0)
 	// The information regarding categories, divisions of each category,
 	// and separator is only used in the dialog to divide the year
 	// automatically by categories.
-	//	Number_of_Categories int    // 0 or 1
-	//	Separator            string // "."
-	//	Category             []fetCategory
-	Group []fetGroup
+	Number_of_Categories int
+	Separator            string // CLASS_GROUP_SEP
+	Category             []fetCategory
+	Group                []fetGroup
 }
 
 type fetStudentsList struct {
@@ -114,30 +116,35 @@ func getClasses(fetinfo *fetInfo) {
 			}
 		}
 
+		// Use the Comments field as an additional specification of the
+		// partitioning.
 		slcum := []string{}
-		for _, divl := range fetinfo.wzdb.ActiveDivisions[c] {
+		active_divisions := fetinfo.wzdb.ActiveDivisions[c]
+		categories := []fetCategory{}
+		for _, divl := range active_divisions {
 			strcum := []string{}
 			for _, i := range divl {
 				strcum = append(strcum, fetinfo.ref2fet[i])
 			}
+			categories = append(categories, fetCategory{
+				Number_of_Divisions: len(divl),
+				Division:            strcum,
+			})
 			slcum = append(slcum, strings.Join(strcum, GROUP_SEP))
 		}
 		strdivs := strings.Join(slcum, DIV_SEP)
 		//fmt.Printf("??? ActiveDivisions %s (%s): %+v\n",
 		//	cname, cl.SORTING, strdivs)
 		items = append(items, fetClass{
-			Name:     cname,
-			Comments: strdivs,
-			Group:    groups,
+			Name:                 cname,
+			Long_Name:            cl.NAME,
+			Comments:             strdivs,
+			Separator:            ".",
+			Number_of_Categories: len(categories),
+			Category:             categories,
+			Group:                groups,
 		})
-		/*
-			items = append(items, fetClass{
-				Name:                 cl.SORTING, //?
-				Comments:             cl.ID,      //?
-				Number_of_Categories: nc,
-				Separator:            ".",
-			})
-		*/
+
 		//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
 
 		// ************************************************************

@@ -37,6 +37,7 @@ func (w365data *W365Data) read_groups() {
 	class365_groups := map[string]map[int]int{}
 	for _, node := range w365data.yeartables[w365_Year] {
 		// w365_Year: Waldorf365: "Grade"
+		name := node[w365_Name]
 		clevel := node[w365_Level]
 		cletter := node[w365_Letter]
 		cltag := clevel + cletter
@@ -105,6 +106,7 @@ func (w365data *W365Data) read_groups() {
 		xnode := wzbase.Class{
 			ID:            cltag,
 			SORTING:       fmt.Sprintf("%02s%s", clevel, cletter),
+			NAME:          name,
 			BLOCK_FACTOR:  af,
 			STUDENTS:      skeys,
 			DIVISIONS:     divlist,

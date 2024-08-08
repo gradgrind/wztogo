@@ -159,6 +159,7 @@ func (cg0 *CourseGroups) AddCourseGroups(
 type Class struct {
 	ID            string // normal short name of class
 	SORTING       string // sortable short name of class
+	NAME          string // long name of class (optional)
 	BLOCK_FACTOR  float64
 	STUDENTS      []int
 	DIVISIONS     []DivGroups
