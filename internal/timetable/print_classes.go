@@ -27,10 +27,10 @@ type Tile struct {
 }
 
 type Timetable struct {
-	Title  string
-	School string
-	Plan   string
-	Pages  [][]interface{}
+	Title string
+	Info  map[string]string
+	Plan  string
+	Pages [][]interface{}
 }
 
 // TODO: Try to find a form suitable for both fet and w365 which can be
@@ -42,6 +42,7 @@ type TTGroup struct {
 	Size   int
 	Total  int
 }
+
 type LessonData struct {
 	Duration  int
 	Subject   string
@@ -52,9 +53,23 @@ type LessonData struct {
 	Hour      int
 }
 
+type IdName struct {
+	Id   string
+	Name string
+}
+
+type TimetableData struct {
+	Info        map[string]string
+	ClassList   []string
+	TeacherList []IdName
+	RoomList    []string
+	Lessons     []LessonData
+}
+
 func PrepareData(wzdb *wzbase.WZdata,
 	activities []wzbase.Activity,
-) []LessonData {
+	// ) []LessonData {
+) TimetableData {
 	ref2id := wzdb.Ref2IdMap()
 	// Get the rooms contained in room-groups
 	room_groups := map[int][]string{}
@@ -188,12 +203,47 @@ func PrepareData(wzdb *wzbase.WZdata,
 			Hour:      a.Hour,
 		})
 	}
-	return lessons
+
+	info := map[string]string{
+		"School": wzdb.Schooldata["SchoolName"].(string),
+	}
+	// Assume the classes table is sorted!
+	clist := []string{}
+	for _, ci := range wzdb.TableMap["CLASSES"] {
+		clist = append(clist, ref2id[ci])
+	}
+	// Assume the teacher table is sorted!
+	tlist := []IdName{}
+	for _, ti := range wzdb.TableMap["TEACHERS"] {
+		node := wzdb.GetNode(ti).(wzbase.Teacher)
+		tlist = append(tlist, IdName{
+			node.ID,
+			node.FIRSTNAMES + " " + node.LASTNAME,
+		})
+	}
+	// Assume the room table is sorted!
+	rlist := []string{}
+	for _, ri := range wzdb.TableMap["ROOMS"] {
+		// Keep only "real" rooms
+		if _, ok := room_groups[ri]; !ok {
+			rlist = append(rlist, ref2id[ri])
+			//fmt.Printf("$ ROOM: %s\n", ref2id[ri])
+		}
+	}
+	return TimetableData{
+		Info:        info,
+		ClassList:   clist,
+		TeacherList: tlist,
+		RoomList:    rlist,
+		Lessons:     lessons,
+	}
 }
 
-func PrintClassTimetables(wzdb *wzbase.WZdata,
+func PrintClassTimetables(
+	ttdata TimetableData,
+	//wzdb *wzbase.WZdata,
 	plan_name string,
-	lessons []LessonData,
+	//lessons []LessonData,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
@@ -207,7 +257,7 @@ func PrintClassTimetables(wzdb *wzbase.WZdata,
 	}
 	// Generate the tiles.
 	classTiles := map[string][]Tile{}
-	for _, l := range lessons {
+	for _, l := range ttdata.Lessons {
 		// Limit the length of the room list.
 		var room string
 		if len(l.RealRooms) > 6 {
@@ -245,9 +295,10 @@ func PrintClassTimetables(wzdb *wzbase.WZdata,
 			classTiles[c.class] = append(classTiles[c.class], tile)
 		}
 	}
+
+	//TODO: wzdb stuff moved to PrepareData, remove it here ...
 	// Assume the classes table is sorted!
-	for _, ci := range wzdb.TableMap["CLASSES"] {
-		cl := wzdb.GetNode(ci).(wzbase.Class).ID
+	for _, cl := range ttdata.ClassList {
 		ctiles, ok := classTiles[cl]
 		if !ok {
 			continue
@@ -258,10 +309,10 @@ func PrintClassTimetables(wzdb *wzbase.WZdata,
 		})
 	}
 	tt := Timetable{
-		Title:  "Stundenpläne der Klassen",
-		School: wzdb.Schooldata["SchoolName"].(string),
-		Plan:   plan_name,
-		Pages:  pages,
+		Title: "Stundenpläne der Klassen",
+		Info:  ttdata.Info,
+		Plan:  plan_name,
+		Pages: pages,
 	}
 	b, err := json.MarshalIndent(tt, "", "  ")
 	if err != nil {

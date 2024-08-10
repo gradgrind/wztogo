@@ -3,7 +3,6 @@ package timetable
 import (
 	"encoding/json"
 	"fmt"
-	"gradgrind/wztogo/internal/wzbase"
 	"log"
 	"os"
 	"os/exec"
@@ -14,24 +13,18 @@ import (
 
 const CLASS_GROUP_SEP = "."
 
-func PrintTeacherTimetables(wzdb *wzbase.WZdata,
+func PrintTeacherTimetables(
+	ttdata TimetableData,
+	//wzdb *wzbase.WZdata,
 	plan_name string,
-	lessons []LessonData,
+	//lessons []LessonData,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
-	// Get a sorted list of class ids.
-	ordered_classes := []string{}
-	// Assume the classes table is sorted!
-	for _, ci := range wzdb.TableMap["CLASSES"] {
-		cl := wzdb.GetNode(ci).(wzbase.Class).ID
-		ordered_classes = append(ordered_classes, cl)
-	}
-
 	pages := [][]interface{}{}
 	// Generate the tiles.
 	teacherTiles := map[string][]Tile{}
-	for _, l := range lessons {
+	for _, l := range ttdata.Lessons {
 		// Limit the length of the room list.
 		var room string
 		if len(l.RealRooms) > 6 {
@@ -48,7 +41,7 @@ func PrintTeacherTimetables(wzdb *wzbase.WZdata,
 		var c_ttg_list []c_ttg
 		if len(l.Students) > 1 {
 			// Multiple classes, which need sorting
-			for _, c := range ordered_classes {
+			for _, c := range ttdata.ClassList {
 				ttgroups, ok := l.Students[c]
 				if ok {
 					c_ttg_list = append(c_ttg_list, c_ttg{c, ttgroups})
@@ -93,23 +86,21 @@ func PrintTeacherTimetables(wzdb *wzbase.WZdata,
 		}
 	}
 	// Assume the teacher table is sorted!
-	for _, ti := range wzdb.TableMap["TEACHERS"] {
-		tnode := wzdb.GetNode(ti).(wzbase.Teacher)
-		t := tnode.ID
-		ctiles, ok := teacherTiles[t]
+	for _, t := range ttdata.TeacherList {
+		ctiles, ok := teacherTiles[t.Id]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []interface{}{
-			fmt.Sprintf("%s %s (%s)", tnode.FIRSTNAMES, tnode.LASTNAME, t),
+			fmt.Sprintf("%s (%s)", t.Name, t.Id),
 			ctiles,
 		})
 	}
 	tt := Timetable{
-		Title:  "Stundenpläne der Lehrer",
-		School: wzdb.Schooldata["SchoolName"].(string),
-		Plan:   plan_name,
-		Pages:  pages,
+		Title: "Stundenpläne der Lehrer",
+		Info:  ttdata.Info,
+		Plan:  plan_name,
+		Pages: pages,
 	}
 	b, err := json.MarshalIndent(tt, "", "  ")
 	if err != nil {
