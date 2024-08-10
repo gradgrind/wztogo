@@ -3,9 +3,12 @@ package readfet
 import (
 	"encoding/xml"
 	"fmt"
+	"gradgrind/wztogo/internal/timetable"
 	"io"
 	"log"
 	"os"
+	"slices"
+	"strings"
 )
 
 type FetResult struct {
@@ -113,4 +116,121 @@ func ReadFetResult(fetpath string) FetResult {
 		Students:    classmap,
 		Activities:  amap,
 	}
+}
+
+// Get the fet data in a form to pass to the printing functions.
+func PrepareFetData(fetdata FetResult) []timetable.LessonData {
+	// Class-group infrastructure
+	divmap := map[string][][]string{}
+	for c, cdata := range fetdata.Students {
+		divlist := [][]string{}
+		for _, div := range cdata.Category {
+			divlist = append(divlist, div.Division)
+		}
+		divmap[c] = divlist
+		//fmt.Printf(" $$$ AD %s: %+v\n", c, divlist)
+	}
+
+	lessons := []timetable.LessonData{}
+	for _, a := range fetdata.Activities {
+		if a.Day < 0 {
+			// Unplaced activity, skip it.
+			continue
+		}
+		// Gather the rooms: Use the RealRooms list unless it is empty,
+		// in which case use the Room value.
+		var rooms []string
+		if len(a.RealRooms) == 0 {
+			rooms = a.RealRooms
+		} else if a.Room != "" {
+			rooms = []string{a.Room}
+		}
+		// Gather the teachers.
+		teachers := a.Teacher
+
+		//TODO: Is there any way of associating teachers with particular
+		// (sub)groups? Probably not (with the current data structures).
+
+		// Gather student groups, dividing them for the class view.
+		classes := map[string][]string{} // mapping: class -> list of groups
+		for _, cg := range a.Students {
+			cgs := strings.SplitN(cg, CLASS_GROUP_SEP, 2)
+			if len(cgs) == 1 {
+				classes[cg] = nil
+			} else {
+				c := cgs[0]
+				classes[c] = append(classes[c], cgs[1])
+			}
+		}
+		cgroups := map[string][]timetable.TTGroup{}
+		for c, glist := range classes {
+			var ttgroups []timetable.TTGroup
+			if len(glist) == 0 {
+				// whole class
+				ttgroups = []timetable.TTGroup{{
+					Groups: nil,
+					Offset: 0,
+					Size:   1,
+					Total:  1,
+				}}
+			} else {
+				n := 0
+				start := 0
+				gs := []string{}
+				for _, div := range divmap[c] {
+					for i, g := range div {
+						if slices.Contains(glist, g) {
+							n += 1
+							if (start + len(gs)) == i {
+								gs = append(gs, g)
+								continue
+							}
+							if len(gs) > 0 {
+								ttgroups = append(ttgroups,
+									timetable.TTGroup{
+										Groups: gs,
+										Offset: start,
+										Size:   len(gs),
+										Total:  len(div),
+									})
+							}
+							gs = []string{g}
+							start = i
+						}
+					}
+					if len(gs) > 0 {
+						ttgroups = append(ttgroups,
+							timetable.TTGroup{
+								Groups: gs,
+								Offset: start,
+								Size:   len(gs),
+								Total:  len(div),
+							})
+					}
+					if n != 0 {
+						if n != len(glist) {
+							log.Fatalf("Groups in activity for class %s"+
+								" not in one division: %+v\n", c, glist)
+						}
+						break
+					}
+				}
+				if n == 0 {
+					log.Fatalf("Invalid groups in activity for class %s: %+v\n",
+						c, glist)
+				}
+			}
+			cgroups[c] = ttgroups
+		}
+		lessons = append(lessons, timetable.LessonData{
+			Duration:  a.Duration,
+			Subject:   a.Subject,
+			Teacher:   teachers,
+			Students:  cgroups,
+			RealRooms: rooms,
+			Day:       a.Day,
+			Hour:      a.Hour,
+		})
+	}
+	return lessons
 }
