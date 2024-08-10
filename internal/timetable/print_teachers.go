@@ -8,117 +8,89 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
+
 	"strings"
 )
 
-func PrintTeachers(wzdb *wzbase.WZdata,
+const CLASS_GROUP_SEP = "."
+
+func PrintTeacherTimetables(wzdb *wzbase.WZdata,
 	plan_name string,
-	activities []wzbase.Activity,
+	lessons []LessonData,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
+	// Get a sorted list of class ids.
+	ordered_classes := []string{}
+	// Assume the classes table is sorted!
+	for _, ci := range wzdb.TableMap["CLASSES"] {
+		cl := wzdb.GetNode(ci).(wzbase.Class).ID
+		ordered_classes = append(ordered_classes, cl)
+	}
+
 	pages := [][]interface{}{}
-	//
-
-	ref2id := wzdb.Ref2IdMap()
-	// Get the rooms contained in room-groups
-	room_groups := map[int][]string{}
-	for _, ri := range wzdb.TableMap["ROOMS"] {
-		rg := wzdb.GetNode(ri).(wzbase.Room).SUBROOMS
-		if len(rg) != 0 {
-			rglist := []string{}
-			for _, r := range rg {
-				rglist = append(rglist, ref2id[r])
-			}
-			slices.Sort(rglist)
-			room_groups[ri] = rglist
-		}
-	}
-
-	// Class-group infrastructure
-	divmap := map[string][][]string{}
-	for c, ad := range wzdb.ActiveDivisions {
-		divlist := [][]string{}
-		for _, div := range ad {
-			gs := []string{}
-			for _, g := range div {
-				gs = append(gs, ref2id[g])
-			}
-			divlist = append(divlist, gs)
-		}
-		divmap[ref2id[c]] = divlist
-		fmt.Printf(" $$$ AD %s: %+v\n", ref2id[c], divlist)
-	}
-
 	// Generate the tiles.
 	teacherTiles := map[string][]Tile{}
-	for _, a := range activities {
-		if a.Day < 0 {
-			// Unplaced activity, skip it.
-			continue
+	for _, l := range lessons {
+		// Limit the length of the room list.
+		var room string
+		if len(l.RealRooms) > 6 {
+			room = strings.Join(l.RealRooms[:5], ",") + "..."
+		} else {
+			room = strings.Join(l.RealRooms, ",")
 		}
-		// Gather the rooms.
-		rooms := []string{}
-		if len(a.Rooms) == 0 {
-			// Check whether there are compulsory rooms (possible with
-			// undeclared room-group).
-			for _, r := range a.RoomNeeds.Compulsory {
-				rooms = append(rooms, ref2id[r])
-			}
-			if len(rooms) > 1 {
-				slices.Sort(rooms)
+		// Gather student groups.
+		var students string
+		type c_ttg struct {
+			class string
+			ttg   []TTGroup
+		}
+		var c_ttg_list []c_ttg
+		if len(l.Students) > 1 {
+			// Multiple classes, which need sorting
+			for _, c := range ordered_classes {
+				ttgroups, ok := l.Students[c]
+				if ok {
+					c_ttg_list = append(c_ttg_list, c_ttg{c, ttgroups})
+				}
 			}
 		} else {
-			for _, r := range a.Rooms {
-				rg, ok := room_groups[r]
-				if ok {
-					rooms = append(rooms, rg...)
+			for c, ttgroups := range l.Students {
+				c_ttg_list = []c_ttg{{c, ttgroups}}
+			}
+		}
+		cgroups := []string{}
+		for _, cg := range c_ttg_list {
+			for _, ttg := range cg.ttg {
+				if len(ttg.Groups) == 0 {
+					cgroups = append(cgroups, cg.class)
 				} else {
-					rooms = append(rooms, ref2id[r])
+					for _, g := range ttg.Groups {
+						cgroups = append(cgroups, cg.class+CLASS_GROUP_SEP+g)
+					}
 				}
 			}
 		}
-		// Limit the length of the room list.
-		var room string
-		if len(rooms) > 6 {
-			room = strings.Join(rooms[:5], ",") + "..."
-		} else {
-			room = strings.Join(rooms, ",")
-		}
-
-		//TODO: Is there any way of associating teachers with particular
-		// (sub)groups? Probably not.
-
-		// Gather student groups.
-		var students string
-		cgroups := []string{}
-		for _, cg := range a.Groups {
-			cgroups = append(cgroups, cg.Print(wzdb))
-		}
-		if len(cgroups) > 6 {
-			students = strings.Join(cgroups[:5], ",") + "..."
+		if len(cgroups) > 10 {
+			students = strings.Join(cgroups[:9], ",") + "..."
 		} else {
 			students = strings.Join(cgroups, ",")
 		}
-
 		// Go through the teachers.
-		for _, ti := range a.Teachers {
-			teacher := ref2id[ti]
+		for _, t := range l.Teacher {
 			tile := Tile{
-				Day:      a.Day,
-				Hour:     a.Hour,
-				Duration: a.Duration,
+				Day:      l.Day,
+				Hour:     l.Hour,
+				Duration: l.Duration,
 				Fraction: 1,
 				Offset:   0,
 				Total:    1,
 				Centre:   students,
-				TL:       ref2id[a.Subject],
+				TL:       l.Subject,
 				BR:       room,
 			}
-			teacherTiles[teacher] = append(teacherTiles[teacher], tile)
+			teacherTiles[t] = append(teacherTiles[t], tile)
 		}
-
 	}
 	// Assume the teacher table is sorted!
 	for _, ti := range wzdb.TableMap["TEACHERS"] {
@@ -133,7 +105,6 @@ func PrintTeachers(wzdb *wzbase.WZdata,
 			ctiles,
 		})
 	}
-
 	tt := Timetable{
 		Title:  "Stundenpläne der Lehrer",
 		School: wzdb.Schooldata["SchoolName"].(string),
@@ -144,7 +115,6 @@ func PrintTeachers(wzdb *wzbase.WZdata,
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-
 	//os.Stdout.Write(b)
 	jsonfile := filepath.Join("_out", "tmp.json")
 	jsonpath := filepath.Join(datadir, jsonfile)

@@ -93,9 +93,9 @@ func TestPrint(t *testing.T) {
 	fmt.Printf("\n Schedule: %s\n", plan_name)
 	wzbase.SetLessons(&wzdb, plan_name, alist, course2activities)
 
-	PrintClasses(&wzdb, plan_name, alist, datadir,
+	lessons := PrepareData(&wzdb, alist)
+	PrintClassTimetables(&wzdb, plan_name, lessons, datadir,
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
-
-	PrintTeachers(&wzdb, plan_name, alist, datadir,
+	PrintTeacherTimetables(&wzdb, plan_name, lessons, datadir,
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Lehrer.pdf")
 }

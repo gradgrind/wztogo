@@ -35,25 +35,26 @@ type Timetable struct {
 
 // TODO: Try to find a form suitable for both fet and w365 which can be
 // passed into the timetable generator.
+type TTGroup struct {
+	// Represents the groups in a tile in the class view
+	Groups []string
+	Offset int
+	Size   int
+	Total  int
+}
 type LessonData struct {
 	Duration  int
 	Subject   string
 	Teacher   []string
-	Students  []string
+	Students  map[string][]TTGroup // mapping: class -> list of groups
 	RealRooms []string
 	Day       int
 	Hour      int
 }
 
-func PrintClasses(wzdb *wzbase.WZdata,
-	plan_name string,
+func PrepareData(wzdb *wzbase.WZdata,
 	activities []wzbase.Activity,
-	datadir string,
-	outpath string, // full path to output pdf
-) {
-	pages := [][]interface{}{}
-	//
-
+) []LessonData {
 	ref2id := wzdb.Ref2IdMap()
 	// Get the rooms contained in room-groups
 	room_groups := map[int][]string{}
@@ -81,19 +82,10 @@ func PrintClasses(wzdb *wzbase.WZdata,
 			divlist = append(divlist, gs)
 		}
 		divmap[ref2id[c]] = divlist
-		fmt.Printf(" $$$ AD %s: %+v\n", ref2id[c], divlist)
+		//fmt.Printf(" $$$ AD %s: %+v\n", ref2id[c], divlist)
 	}
 
-	type chip struct {
-		class  string
-		groups []string
-		offset int
-		parts  int
-		total  int
-	}
-
-	// Generate the tiles.
-	classTiles := map[string][]Tile{}
+	lessons := []LessonData{}
 	for _, a := range activities {
 		if a.Day < 0 {
 			// Unplaced activity, skip it.
@@ -120,29 +112,16 @@ func PrintClasses(wzdb *wzbase.WZdata,
 				}
 			}
 		}
-		// Limit the length of the room list.
-		var room string
-		if len(rooms) > 6 {
-			room = strings.Join(rooms[:5], ",") + "..."
-		} else {
-			room = strings.Join(rooms, ",")
-		}
 		// Gather the teachers.
 		teachers := []string{}
 		for _, t := range a.Teachers {
 			teachers = append(teachers, ref2id[t])
 		}
-		var teacher string
-		if len(teachers) > 6 {
-			teacher = strings.Join(teachers[:5], ",") + "..."
-		} else {
-			teacher = strings.Join(teachers, ",")
-		}
 
 		//TODO: Is there any way of associating teachers with particular
-		// (sub)groups? Probably not.
+		// (sub)groups? Probably not (with the current data structures).
 
-		// Gather student groups.
+		// Gather student groups, dividing them for the class view.
 		classes := map[string][]string{} // mapping: class -> list of groups
 		for _, cg := range a.Groups {
 			c := ref2id[cg.CIX]
@@ -153,94 +132,131 @@ func PrintClasses(wzdb *wzbase.WZdata,
 			} else {
 				classes[c] = append(classes[c], g)
 			}
-			/*
-				gl, ok := classes[c]
-				if ok {
-					// Assume the groups are valid
-					classes[c] = append(gl, g)
-				} else if g == "" {
-					classes[c] = nil
-				} else {
-					classes[c] = []string{g}
-				}
-			*/
 		}
-
-		chips := []chip{}
+		cgroups := map[string][]TTGroup{}
 		for c, glist := range classes {
+			var ttgroups []TTGroup
 			if len(glist) == 0 {
 				// whole class
-				chips = append(chips, chip{c, nil, 0, 1, 1})
-				continue
-			}
-			n := 0
-			start := 0
-			gs := []string{}
-			for _, div := range divmap[c] {
-				for i, g := range div {
-					if slices.Contains(glist, g) {
-						n += 1
-						if (start + len(gs)) == i {
-							gs = append(gs, g)
-							continue
+				ttgroups = []TTGroup{{nil, 0, 1, 1}}
+			} else {
+				n := 0
+				start := 0
+				gs := []string{}
+				for _, div := range divmap[c] {
+					for i, g := range div {
+						if slices.Contains(glist, g) {
+							n += 1
+							if (start + len(gs)) == i {
+								gs = append(gs, g)
+								continue
+							}
+							if len(gs) > 0 {
+								ttgroups = append(ttgroups,
+									TTGroup{gs, start, len(gs), len(div)})
+							}
+							gs = []string{g}
+							start = i
 						}
-						if len(gs) > 0 {
-							chips = append(chips, chip{c, gs, start, len(gs), len(div)})
+					}
+					if len(gs) > 0 {
+						ttgroups = append(ttgroups,
+							TTGroup{gs, start, len(gs), len(div)})
+					}
+					if n != 0 {
+						if n != len(glist) {
+							log.Fatalf("Groups in activity for class %s"+
+								" not in one division: %+v\n", c, glist)
 						}
-						gs = []string{g}
-						start = i
+						break
 					}
 				}
-				if len(gs) > 0 {
-					chips = append(chips, chip{c, gs, start, len(gs), len(div)})
-				}
-				if n != 0 {
-					if n != len(glist) {
-						log.Fatalf("Groups in activity for class %s"+
-							" not in one division: %+v\n", c, glist)
-					}
-					break
+				if n == 0 {
+					log.Fatalf("Invalid groups in activity for class %s: %+v\n",
+						c, glist)
 				}
 			}
-			if n == 0 {
-				log.Fatalf("Invalid groups in activity for class %s: %+v\n",
-					c, glist)
+			cgroups[c] = ttgroups
+		}
+		lessons = append(lessons, LessonData{
+			Duration:  a.Duration,
+			Subject:   ref2id[a.Subject],
+			Teacher:   teachers,
+			Students:  cgroups,
+			RealRooms: rooms,
+			Day:       a.Day,
+			Hour:      a.Hour,
+		})
+	}
+	return lessons
+}
+
+func PrintClassTimetables(wzdb *wzbase.WZdata,
+	plan_name string,
+	lessons []LessonData,
+	datadir string,
+	outpath string, // full path to output pdf
+) {
+	pages := [][]interface{}{}
+	type chip struct {
+		class  string
+		groups []string
+		offset int
+		parts  int
+		total  int
+	}
+	// Generate the tiles.
+	classTiles := map[string][]Tile{}
+	for _, l := range lessons {
+		// Limit the length of the room list.
+		var room string
+		if len(l.RealRooms) > 6 {
+			room = strings.Join(l.RealRooms[:5], ",") + "..."
+		} else {
+			room = strings.Join(l.RealRooms, ",")
+		}
+		// Limit the length of the teachers list.
+		var teacher string
+		if len(l.Teacher) > 6 {
+			teacher = strings.Join(l.Teacher[:5], ",") + "..."
+		} else {
+			teacher = strings.Join(l.Teacher, ",")
+		}
+		chips := []chip{}
+		for cl, ttglist := range l.Students {
+			for _, ttg := range ttglist {
+				chips = append(chips, chip{cl,
+					ttg.Groups, ttg.Offset, ttg.Size, ttg.Total})
 			}
 		}
-
-		fmt.Printf("*** GROUPS (%s / %s): %+v\n", teacher, room, chips)
-
 		for _, c := range chips {
 			tile := Tile{
-				Day:      a.Day,
-				Hour:     a.Hour,
-				Duration: a.Duration,
+				Day:      l.Day,
+				Hour:     l.Hour,
+				Duration: l.Duration,
 				Fraction: c.parts,
 				Offset:   c.offset,
 				Total:    c.total,
-				Centre:   ref2id[a.Subject],
+				Centre:   l.Subject,
 				TL:       teacher,
 				TR:       strings.Join(c.groups, ","),
 				BR:       room,
 			}
 			classTiles[c.class] = append(classTiles[c.class], tile)
 		}
-
 	}
 	// Assume the classes table is sorted!
 	for _, ci := range wzdb.TableMap["CLASSES"] {
-		c := ref2id[ci]
-		ctiles, ok := classTiles[c]
+		cl := wzdb.GetNode(ci).(wzbase.Class).ID
+		ctiles, ok := classTiles[cl]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []interface{}{
-			fmt.Sprintf("Klasse %s", c),
+			fmt.Sprintf("Klasse %s", cl),
 			ctiles,
 		})
-
 	}
-
 	tt := Timetable{
 		Title:  "Stundenpläne der Klassen",
 		School: wzdb.Schooldata["SchoolName"].(string),
@@ -251,7 +267,6 @@ func PrintClasses(wzdb *wzbase.WZdata,
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-
 	//os.Stdout.Write(b)
 	jsonfile := filepath.Join("_out", "tmp.json")
 	jsonpath := filepath.Join(datadir, jsonfile)
