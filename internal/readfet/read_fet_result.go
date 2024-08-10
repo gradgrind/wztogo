@@ -232,5 +232,43 @@ func PrepareFetData(fetdata FetResult) []timetable.LessonData {
 			Hour:      a.Hour,
 		})
 	}
-	return lessons
+
+	//return lessons
+
+	info := map[string]string{
+		"School": fetdata.Institution,
+	}
+	clist := []string{}
+	for _, ci := range fetdata.Students {
+		clist = append(clist, ref2id[ci])
+	}
+	tlmap := map[int]timetable.IdName{}
+	xmax := -1
+	for t, tdata := range fetdata.Teachers {
+		name := tdata.Long_Name
+		if name == "" {
+			name = tdata.Comments
+		}
+		x := tdata.X
+		tlmap[x] = timetable.IdName{Id: t, Name: name}
+		if x > xmax {
+			xmax = x
+		}
+	}
+	tlist := []timetable.IdName{}
+	for x := 0; x <= xmax; x++ {
+		idn, ok := tlmap[x]
+		if ok {
+			tlist = append(tlist, idn)
+		}
+	}
+
+	return TimetableData{
+		Info:        info,
+		ClassList:   clist,
+		TeacherList: tlist,
+		RoomList:    rlist,
+		Lessons:     lessons,
+	}
+
 }
