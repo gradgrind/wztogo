@@ -60,9 +60,9 @@ type IdName struct {
 
 type TimetableData struct {
 	Info        map[string]string
-	ClassList   []string
+	ClassList   []IdName
 	TeacherList []IdName
-	RoomList    []string
+	RoomList    []IdName
 	Lessons     []LessonData
 }
 
@@ -208,9 +208,13 @@ func PrepareData(wzdb *wzbase.WZdata,
 		"School": wzdb.Schooldata["SchoolName"].(string),
 	}
 	// Assume the classes table is sorted!
-	clist := []string{}
+	clist := []IdName{}
 	for _, ci := range wzdb.TableMap["CLASSES"] {
-		clist = append(clist, ref2id[ci])
+		node := wzdb.GetNode(ci).(wzbase.Class)
+		clist = append(clist, IdName{
+			node.ID,
+			node.NAME,
+		})
 	}
 	// Assume the teacher table is sorted!
 	tlist := []IdName{}
@@ -222,11 +226,15 @@ func PrepareData(wzdb *wzbase.WZdata,
 		})
 	}
 	// Assume the room table is sorted!
-	rlist := []string{}
+	rlist := []IdName{}
 	for _, ri := range wzdb.TableMap["ROOMS"] {
 		// Keep only "real" rooms
 		if _, ok := room_groups[ri]; !ok {
-			rlist = append(rlist, ref2id[ri])
+			node := wzdb.GetNode(ri).(wzbase.Room)
+			rlist = append(rlist, IdName{
+				node.ID,
+				node.NAME,
+			})
 			//fmt.Printf("$ ROOM: %s\n", ref2id[ri])
 		}
 	}
@@ -241,9 +249,7 @@ func PrepareData(wzdb *wzbase.WZdata,
 
 func PrintClassTimetables(
 	ttdata TimetableData,
-	//wzdb *wzbase.WZdata,
 	plan_name string,
-	//lessons []LessonData,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
@@ -296,15 +302,13 @@ func PrintClassTimetables(
 		}
 	}
 
-	//TODO: wzdb stuff moved to PrepareData, remove it here ...
-	// Assume the classes table is sorted!
 	for _, cl := range ttdata.ClassList {
-		ctiles, ok := classTiles[cl]
+		ctiles, ok := classTiles[cl.Id]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []interface{}{
-			fmt.Sprintf("Klasse %s", cl),
+			fmt.Sprintf("Klasse %s", cl.Id),
 			ctiles,
 		})
 	}

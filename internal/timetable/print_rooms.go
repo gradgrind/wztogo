@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-const CLASS_GROUP_SEP = "."
-
-func PrintTeacherTimetables(
+func PrintRoomTimetables(
 	ttdata TimetableData,
 	plan_name string,
 	datadir string,
@@ -21,14 +19,14 @@ func PrintTeacherTimetables(
 ) {
 	pages := [][]interface{}{}
 	// Generate the tiles.
-	teacherTiles := map[string][]Tile{}
+	roomTiles := map[string][]Tile{}
 	for _, l := range ttdata.Lessons {
-		// Limit the length of the room list.
-		var room string
-		if len(l.RealRooms) > 6 {
-			room = strings.Join(l.RealRooms[:5], ",") + "..."
+		// Limit the length of the teachers list.
+		var teacher string
+		if len(l.Teacher) > 6 {
+			teacher = strings.Join(l.Teacher[:5], ",") + "..."
 		} else {
-			room = strings.Join(l.RealRooms, ",")
+			teacher = strings.Join(l.Teacher, ",")
 		}
 		// Gather student groups.
 		var students string
@@ -67,8 +65,8 @@ func PrintTeacherTimetables(
 		} else {
 			students = strings.Join(cgroups, ",")
 		}
-		// Go through the teachers.
-		for _, t := range l.Teacher {
+		// Go through the rooms.
+		for _, r := range l.RealRooms {
 			tile := Tile{
 				Day:      l.Day,
 				Hour:     l.Hour,
@@ -78,23 +76,23 @@ func PrintTeacherTimetables(
 				Total:    1,
 				Centre:   students,
 				TL:       l.Subject,
-				BR:       room,
+				BR:       teacher,
 			}
-			teacherTiles[t] = append(teacherTiles[t], tile)
+			roomTiles[r] = append(roomTiles[r], tile)
 		}
 	}
-	for _, t := range ttdata.TeacherList {
-		ctiles, ok := teacherTiles[t.Id]
+	for _, r := range ttdata.RoomList {
+		ctiles, ok := roomTiles[r.Id]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []interface{}{
-			fmt.Sprintf("%s (%s)", t.Name, t.Id),
+			fmt.Sprintf("%s (%s)", r.Name, r.Id),
 			ctiles,
 		})
 	}
 	tt := Timetable{
-		Title: "Stundenpläne der Lehrer",
+		Title: "Stundenpläne der Räume",
 		Info:  ttdata.Info,
 		Plan:  plan_name,
 		Pages: pages,

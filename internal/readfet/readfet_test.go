@@ -2,6 +2,7 @@ package readfet
 
 import (
 	"fmt"
+	"gradgrind/wztogo/internal/timetable"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,4 +33,13 @@ func TestToW365(t *testing.T) {
 	defer f.Close()
 	f.WriteString(w365)
 	fmt.Printf("Saved to %s\n", fout)
+
+	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	datadir, err := filepath.Abs("../data/")
+	if err != nil {
+		log.Fatal(err)
+	}
+	lessons := PrepareFetData(fetdata)
+	timetable.PrintClassTimetables(lessons, "fet", datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
 }

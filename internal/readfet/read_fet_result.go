@@ -2,11 +2,11 @@ package readfet
 
 import (
 	"encoding/xml"
-	"fmt"
 	"gradgrind/wztogo/internal/timetable"
 	"io"
 	"log"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 )
@@ -102,7 +102,7 @@ func ReadFetResult(fetpath string) FetResult {
 			a.Day = -1
 		}
 		amap[ai] = a
-		fmt.Printf("§ ACTIVITY: %+v\n", a)
+		//fmt.Printf("§ ACTIVITY: %+v\n", a)
 	}
 	// Gather all the data together
 	return FetResult{
@@ -119,10 +119,11 @@ func ReadFetResult(fetpath string) FetResult {
 }
 
 // Get the fet data in a form to pass to the printing functions.
-func PrepareFetData(fetdata FetResult) []timetable.LessonData {
+func PrepareFetData(fetdata FetResult) timetable.TimetableData {
 	// Class-group infrastructure
 	divmap := map[string][][]string{}
 	for c, cdata := range fetdata.Students {
+		//fmt.Printf("§ 2: %s %+v\n", c, cdata)
 		divlist := [][]string{}
 		for _, div := range cdata.Category {
 			divlist = append(divlist, div.Division)
@@ -164,6 +165,7 @@ func PrepareFetData(fetdata FetResult) []timetable.LessonData {
 		}
 		cgroups := map[string][]timetable.TTGroup{}
 		for c, glist := range classes {
+			//fmt.Printf("§ 1: %s %+v || %+v\n", c, glist, divmap[c])
 			var ttgroups []timetable.TTGroup
 			if len(glist) == 0 {
 				// whole class
@@ -232,24 +234,82 @@ func PrepareFetData(fetdata FetResult) []timetable.LessonData {
 			Hour:      a.Hour,
 		})
 	}
-
-	//return lessons
-
 	info := map[string]string{
 		"School": fetdata.Institution,
 	}
-	clist := []string{}
-	for _, ci := range fetdata.Students {
-		clist = append(clist, ref2id[ci])
+	clist := makeItemList(fetdata.Students)
+	tlist := makeItemList(fetdata.Teachers)
+	rlist := makeItemList(fetdata.Rooms)
+
+	/*
+		clmap := map[int]timetable.IdName{}
+		var xmax int
+		xmax = -1
+		for c, cdata := range fetdata.Students {
+			name := cdata.Long_Name
+			if name == "" {
+				name = cdata.Comments
+			}
+			x := cdata.X
+			clmap[x] = timetable.IdName{Id: c, Name: name}
+			if x > xmax {
+				xmax = x
+			}
+		}
+		tlist := []timetable.IdName{}
+		for x := 0; x <= xmax; x++ {
+			idn, ok := tlmap[x]
+			if ok {
+				tlist = append(tlist, idn)
+			}
+		}
+		rlist := []string{}
+		for r := range fetdata.Rooms {
+			rlist = append(rlist, r)
+		}
+		tlmap := map[int]timetable.IdName{}
+		xmax = -1
+		for t, tdata := range fetdata.Teachers {
+			name := tdata.Long_Name
+			if name == "" {
+				name = tdata.Comments
+			}
+			x := tdata.X
+			tlmap[x] = timetable.IdName{Id: t, Name: name}
+			if x > xmax {
+				xmax = x
+			}
+		}
+		tlist := []timetable.IdName{}
+		for x := 0; x <= xmax; x++ {
+			idn, ok := tlmap[x]
+			if ok {
+				tlist = append(tlist, idn)
+			}
+		}
+	*/
+
+	return timetable.TimetableData{
+		Info:        info,
+		ClassList:   clist,
+		TeacherList: tlist,
+		RoomList:    rlist,
+		Lessons:     lessons,
 	}
+
+}
+
+func makeItemList(_itemmap any) []timetable.IdName {
+	itemmap := _itemmap.(map[string]any)
 	tlmap := map[int]timetable.IdName{}
 	xmax := -1
-	for t, tdata := range fetdata.Teachers {
-		name := tdata.Long_Name
+	for t, tdata := range itemmap {
+		s := reflect.ValueOf(tdata)
+		name := s.FieldByName("Long_Name").String()
 		if name == "" {
-			name = tdata.Comments
+			name = s.FieldByName("Comments").String()
 		}
-		x := tdata.X
+		x := int(s.FieldByName("X").Int())
 		tlmap[x] = timetable.IdName{Id: t, Name: name}
 		if x > xmax {
 			xmax = x
@@ -262,13 +322,5 @@ func PrepareFetData(fetdata FetResult) []timetable.LessonData {
 			tlist = append(tlist, idn)
 		}
 	}
-
-	return TimetableData{
-		Info:        info,
-		ClassList:   clist,
-		TeacherList: tlist,
-		RoomList:    rlist,
-		Lessons:     lessons,
-	}
-
+	return tlist
 }
