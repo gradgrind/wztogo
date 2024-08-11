@@ -42,4 +42,8 @@ func TestToW365(t *testing.T) {
 	lessons := PrepareFetData(fetdata)
 	timetable.PrintClassTimetables(lessons, "fet", datadir,
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
+	timetable.PrintTeacherTimetables(lessons, "fet", datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Lehrer.pdf")
+	timetable.PrintRoomTimetables(lessons, "fet", datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
 }

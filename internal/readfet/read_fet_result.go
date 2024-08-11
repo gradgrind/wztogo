@@ -39,9 +39,6 @@ func ReadFetResult(fetpath string) FetResult {
 	if err != nil {
 		log.Fatalf("XML error in %s:\n %v\n", fetpath, err)
 	}
-
-	//fmt.Printf(" --- Year-Id: %s\n", v.Comments)
-
 	daymap := map[string]Day{}
 	for i, d := range v.Days_List.Day {
 		d.X = i
@@ -141,7 +138,7 @@ func PrepareFetData(fetdata FetResult) timetable.TimetableData {
 		// Gather the rooms: Use the RealRooms list unless it is empty,
 		// in which case use the Room value.
 		var rooms []string
-		if len(a.RealRooms) == 0 {
+		if len(a.RealRooms) != 0 {
 			rooms = a.RealRooms
 		} else if a.Room != "" {
 			rooms = []string{a.Room}
@@ -240,55 +237,6 @@ func PrepareFetData(fetdata FetResult) timetable.TimetableData {
 	clist := makeItemList(fetdata.Students)
 	tlist := makeItemList(fetdata.Teachers)
 	rlist := makeItemList(fetdata.Rooms)
-
-	/*
-		clmap := map[int]timetable.IdName{}
-		var xmax int
-		xmax = -1
-		for c, cdata := range fetdata.Students {
-			name := cdata.Long_Name
-			if name == "" {
-				name = cdata.Comments
-			}
-			x := cdata.X
-			clmap[x] = timetable.IdName{Id: c, Name: name}
-			if x > xmax {
-				xmax = x
-			}
-		}
-		tlist := []timetable.IdName{}
-		for x := 0; x <= xmax; x++ {
-			idn, ok := tlmap[x]
-			if ok {
-				tlist = append(tlist, idn)
-			}
-		}
-		rlist := []string{}
-		for r := range fetdata.Rooms {
-			rlist = append(rlist, r)
-		}
-		tlmap := map[int]timetable.IdName{}
-		xmax = -1
-		for t, tdata := range fetdata.Teachers {
-			name := tdata.Long_Name
-			if name == "" {
-				name = tdata.Comments
-			}
-			x := tdata.X
-			tlmap[x] = timetable.IdName{Id: t, Name: name}
-			if x > xmax {
-				xmax = x
-			}
-		}
-		tlist := []timetable.IdName{}
-		for x := 0; x <= xmax; x++ {
-			idn, ok := tlmap[x]
-			if ok {
-				tlist = append(tlist, idn)
-			}
-		}
-	*/
-
 	return timetable.TimetableData{
 		Info:        info,
 		ClassList:   clist,
@@ -299,18 +247,18 @@ func PrepareFetData(fetdata FetResult) timetable.TimetableData {
 
 }
 
-func makeItemList(_itemmap any) []timetable.IdName {
-	itemmap := _itemmap.(map[string]any)
+func makeItemList(itemmap any) []timetable.IdName {
 	tlmap := map[int]timetable.IdName{}
 	xmax := -1
-	for t, tdata := range itemmap {
-		s := reflect.ValueOf(tdata)
-		name := s.FieldByName("Long_Name").String()
-		if name == "" {
-			name = s.FieldByName("Comments").String()
+	v := reflect.ValueOf(itemmap)
+	for _, k := range v.MapKeys() {
+		n := v.MapIndex(k)
+		ln := n.FieldByName("Long_Name").String()
+		if ln == "" {
+			ln = n.FieldByName("Comments").String()
 		}
-		x := int(s.FieldByName("X").Int())
-		tlmap[x] = timetable.IdName{Id: t, Name: name}
+		x := int(n.FieldByName("X").Int())
+		tlmap[x] = timetable.IdName{Id: k.String(), Name: ln}
 		if x > xmax {
 			xmax = x
 		}
