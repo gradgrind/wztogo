@@ -123,28 +123,24 @@
     "Rows": (
         ("Header": "First Room", "Items": ()),
         ("Header": "Another Room", "Items": (
-            (   "Day": 1,
-                "Hour": 2,
-                "Data": (
+            (   "day": 1,
+                "hour": 2,
+                "data": (
                     "duration": 1, 
-                    "top": 
-                    "Fr", 
-                    "middle": 
-                    "10.A +", 
+                    "top":  "Fr", 
+                    "middle": "10.A +", 
                     "bottom": "ABC +",
                 ),
             ),
         )),
         ("Header": "A Very, Very Long Room", "Items": (
-            (   "Day": 2,
-                "Hour": 4,
-                "Data": (
+            (   "day": 2,
+                "hour": 4,
+                "data": (
                     "duration": 2, 
                     "top": "Ma", 
-                    "middle": 
-                    "10.R", 
-                    "bottom": 
-                    "MN"
+                    "middle": "10.R", 
+                    "bottom": "MN",
                 ),
             ),
         )),
@@ -152,6 +148,10 @@
     )
 )
 
+#let ijson = sys.inputs.at("ifile", default: "")
+#if  ijson != "" {
+    xdata = json(ijson)
+}
 //#let xdata = json(sys.inputs.ifile)
 
 //TODO: Use data to perform some setting up actions (e.g. days and periods)?
@@ -175,13 +175,13 @@
     let newrow = ([],)*pcols
     let excess = ()
     for item in row.Items {
-        let i = item.Day * HOURS.len() + item.Hour
-        let n = item.Data.duration
+        let i = item.day * HOURS.len() + item.hour
+        let n = item.data.duration
         while n > 1 {
             n -= 1
             excess.push(i + n)
         }
-        newrow.at(i) = ttvcell(..item.Data)
+        newrow.at(i) = ttvcell(..item.data)
     }
     if excess.len() != 0 {
         let xs = excess.sorted()

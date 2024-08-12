@@ -100,4 +100,6 @@ func TestPrint(t *testing.T) {
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Lehrer.pdf")
 	PrintRoomTimetables(lessons, plan_name, datadir,
 		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
+	PrintRoomOverview(lessons, plan_name, datadir,
+		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume-gesamt.pdf")
 }

@@ -30,7 +30,7 @@ type Timetable struct {
 	Title string
 	Info  map[string]string
 	Plan  string
-	Pages [][]interface{}
+	Pages [][]any
 }
 
 // TODO: Try to find a form suitable for both fet and w365 which can be
@@ -253,7 +253,7 @@ func PrintClassTimetables(
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
-	pages := [][]interface{}{}
+	pages := [][]any{}
 	type chip struct {
 		class  string
 		groups []string
@@ -307,7 +307,7 @@ func PrintClassTimetables(
 		if !ok {
 			continue
 		}
-		pages = append(pages, []interface{}{
+		pages = append(pages, []any{
 			fmt.Sprintf("Klasse %s", cl.Id),
 			ctiles,
 		})

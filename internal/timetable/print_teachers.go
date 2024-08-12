@@ -19,7 +19,7 @@ func PrintTeacherTimetables(
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
-	pages := [][]interface{}{}
+	pages := [][]any{}
 	// Generate the tiles.
 	teacherTiles := map[string][]Tile{}
 	for _, l := range ttdata.Lessons {
@@ -88,7 +88,7 @@ func PrintTeacherTimetables(
 		if !ok {
 			continue
 		}
-		pages = append(pages, []interface{}{
+		pages = append(pages, []any{
 			fmt.Sprintf("%s (%s)", t.Name, t.Id),
 			ctiles,
 		})
