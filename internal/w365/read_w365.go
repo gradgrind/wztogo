@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ncruces/zenity"
 )
 
 // Read a Waldorf 365 data file and divide it into "items" (individual
@@ -236,8 +237,31 @@ func convert_colour(colour string) string {
 // references).
 func ReadW365(w365file string) wzbase.WZdata {
 	db365 := ReadW365Raw(w365file)
-	//TODO: Might one want to select a different year?
-	db365.ReadYear(db365.ActiveYear)
+	// Select school year
+	ylist := []string{}
+	ychoice := []string{}
+	for _, yeardata := range db365.Years {
+		ylist = append(ylist, yeardata.Tag)
+		pre := ""
+		if yeardata.Tag == db365.ActiveYear {
+			pre = "* "
+		}
+		ychoice = append(ychoice, fmt.Sprintf("%s%s: %s",
+			pre, yeardata.Tag, yeardata.Name))
+	}
+	var year string
+	if len(ylist) == 1 {
+		year = ylist[0]
+	} else {
+		yearx, err := zenity.ListItems(
+			"Select a School Year",
+			ychoice...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		year = ylist[slices.Index(ychoice, yearx)]
+	}
+	db365.ReadYear(year)
 	db365.read_days()
 	db365.read_hours()
 	db365.read_subjects()
