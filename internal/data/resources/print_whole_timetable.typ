@@ -1,18 +1,15 @@
 #let PAGE_HEIGHT = 297mm
 #let PAGE_WIDTH = 420mm
-#let PAGE_BORDER = (top:15mm, bottom: 12mm, left: 15mm, right: 15mm)
-#set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
-//  numbering: "1",
-  margin: PAGE_BORDER,
-)
+#let PAGE_BORDER = (top:15mm, bottom: 15mm, left: 15mm, right: 15mm)
+#let NORMAL_SIZE = 12pt
+#let TITLE_SIZE = 14pt
 #let CELL_BORDER = 1pt
-#let BIG_SIZE = 16pt
-#let NORMAL_SIZE = 14pt
-#let PLAIN_SIZE = 12pt
-#let SMALL_SIZE = 10pt
+#let CELL_TEXT_SIZE = 10pt
+#let DAY_SIZE = 13pt
+#let HOUR_SIZE = 9pt
 
 #let FRAME_COLOUR = "#707070"
-#let BREAK_COLOUR = "#e0e0e0"
+#let HEADER_COLOUR = "#e0e0e0"
 #let EMPTY_COLOUR = "#f0f0f0"
 
 #let TITLE_HEIGHT = 20mm
@@ -31,92 +28,52 @@
 #let H_HEADER_HEIGHT2 = 10mm
 #let H_HEADER_HEIGHT = H_HEADER_HEIGHT1 + H_HEADER_HEIGHT2
 #let V_HEADER_WIDTH = 30mm
-#let ROW_HEIGHT = 15mm
-
-// Collect headers and y-coordinates for the rows.
-#let ROWS = ("Room 1", "Room2", "Room 3", "Room 4")
-#let trows = (H_HEADER_HEIGHT1, H_HEADER_HEIGHT2) + (ROW_HEIGHT,)*ROWS.len()
-//#trows
+#let ROW_HEIGHT = 10mm
 
 // Build the vertical lines
 #let vlines = (V_HEADER_WIDTH,)
 #let pcols = DAYS.len()*HOURS.len()
 #let colwidth = (PLAN_AREA_WIDTH - V_HEADER_WIDTH) / pcols
 #let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*pcols
-//#tcolumns
-
-
-//#let ch = ([],) + DAYS
-//#for h in ptime {
-//    ch += (h,) + ([],) * DAYS.len()
-//}
 
 #show table.cell: it => {
-  if it.y < 2 {
-    set text(size: PLAIN_SIZE, weight: "bold")
+  if it.y == 0 {
+    set text(size: DAY_SIZE, weight: "bold")
+    align(center + horizon, it.body.at("text", default: ""))
+  } else if it.y == 1 {
+    set text(size: HOUR_SIZE, weight: "bold")
     align(center + horizon, it.body.at("text", default: ""))
   } else if it.x == 0 {
-    set text(size: PLAIN_SIZE, weight: "bold")
+    set text(size: NORMAL_SIZE, weight: "bold")
     align(center + horizon, it.body.at("text", default: ""))
   } else {
     it
   }
 }
+//TODO: Maybe the vertical headers should be boxed, to have auto-adjusting size?
 
-// On lines with two text items:
-// If one is smaller than 25% of the space, leave this and shrink the
-// other to 90% of the reamining space. Otherwise shrink both.
-#let fit2inspace(width, text1, text2) = {
-    let t1 = text(size: SMALL_SIZE, text1)
-    let t2 = text(size: SMALL_SIZE, text2)
-    let w4 = width / 4
+#let shrinkwrap(
+    width, 
+    textc, 
+    tsize: CELL_TEXT_SIZE, 
+    bold: false, 
+    align: -1,
+) = {
+    let wt = "regular"
+    if bold { wt = "bold" }
     context {
-        let s1 = measure(t1)
-        let s2 = measure(t2)
-        if (s1.width + s2.width) > width * 0.9 {
-            if s1.width < w4 {
-                // shrink only text2
-                let w2 = width - s1.width
-                let scl = (w2 * 0.9) / s2.width
-                box(width: width, inset: 2pt,
-                    t1
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
-            } else if s2.width < w4 {
-                // shrink only text1
-                let w2 = width - s2.width
-                let scl = (w2 * 0.9) / s1.width
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + t2
-                )
-            } else {
-                // shrink both
-                let scl = (width * 0.9) / (s1.width + s2.width)
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
-            }
-        } else {
-            box(width: width, inset: 2pt, t1 + h(1fr) + t2)
-        }
-    }
-}
-
-#let fitinspace(width, textc) = {
-    let t = text(size: NORMAL_SIZE, weight: "bold", textc)
-    context {
+        let t = text(size: tsize, weight: wt, textc)
         let s = measure(t)
         if s.width > width * 0.9 {
             let scl = (width * 0.9 / s.width)
-            let ts = text(size: scl * NORMAL_SIZE, weight: "bold", textc)
-            box(width: width, h(1fr) + ts + h(1fr))
-        } else {
+            t = text(size: scl * tsize, weight: wt, textc)
+        }
+        if align < 0 {
+            box(width: width, t + h(1fr))
+        } else if align == 0 {
             box(width: width, h(1fr) + t + h(1fr))
+        } else {
+            box(width: width, h(1fr) + t)
         }
     }
 }
@@ -124,100 +81,136 @@
 #let cell_inset = CELL_BORDER
 #let cell_width = colwidth - cell_inset * 2
 
-#let ttxcell(
-    row: 0,
-    day: 0,
-    hour: 0,
+// This version only caters for full cells (no subdivision) and fixes the
+// structure within the cell.
+#let ttvcell(
     duration: 1,
-    offset: 0,
-    fraction: 1,
-    total: 1,
-    centre: "",
-    tl: "",
-    tr: "",
-    bl: "",
-    br: "",
+    top: "",
+    middle: "",
+    bottom: "",
 ) = {
-    let x0 = (day * HOURS.len() + hour) * colwidth + V_HEADER_WIDTH
-    let y0 = row * ROW_HEIGHT + H_HEADER_HEIGHT
-    let x1 = x0 + colwidth * duration
-    let wfrac = cell_width * fraction / total
-    let xshift = cell_width * offset / total
-    // Shrink excessively large components.
+    let w = colwidth * duration - cell_inset * 2
     let b = box(
         fill: luma(100%),
-        stroke: CELL_BORDER,
-        inset: 0pt,
-        height: y1 - y0 - CELL_BORDER*2,
-        width: wfrac,
+        height: ROW_HEIGHT - CELL_BORDER*2,
+        width: w,
     )[
-        #fit2inspace(wfrac, tl, tr)
+        #shrinkwrap(w, top, align: 1)
         #v(1fr)
-        #fitinspace(wfrac, centre)
+        #shrinkwrap(w, middle, bold: true)
         #v(1fr)
-        #fit2inspace(wfrac, bl, br)
+        #shrinkwrap(w, bottom, align: 1)
     ]
-    place(top + left,
-        dx: x0 + CELL_BORDER + xshift,
-        dy: y0 + CELL_BORDER,
-        b
-    )
+    table.cell(colspan: duration, b)
 }
 
-#let dheader = []
-#let pheader = []
+#let dheader = ([],)
+#let pheader = ([],)
+#for d in DAYS {
+    dheader.push(table.cell(colspan: HOURS.len(), d))
+    for p in HOURS {
+        pheader.push(p)
+    }
+}
+
+#show heading: it => text(weight: "bold", size: TITLE_SIZE,
+    bottom-edge: "descender",
+    pad(left: 5mm, it))
+
+// Test data:
+#let xdata = (
+    "Title": "Räume – Gesamtansicht",
+    "Rows": (
+        ("Header": "First Room", "Items": ()),
+        ("Header": "Another Room", "Items": (
+            (   "Day": 1,
+                "Hour": 2,
+                "Data": (
+                    "duration": 1, 
+                    "top": 
+                    "Fr", 
+                    "middle": 
+                    "10.A +", 
+                    "bottom": "ABC +",
+                ),
+            ),
+        )),
+        ("Header": "A Very, Very Long Room", "Items": (
+            (   "Day": 2,
+                "Hour": 4,
+                "Data": (
+                    "duration": 2, 
+                    "top": "Ma", 
+                    "middle": 
+                    "10.R", 
+                    "bottom": 
+                    "MN"
+                ),
+            ),
+        )),
+        ("Header": "Last Room", "Items": ()),
+    )
+)
+
+//#let xdata = json(sys.inputs.ifile)
+
+//TODO: Use data to perform some setting up actions (e.g. days and periods)?
+
+#set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
+  margin: PAGE_BORDER,
+  footer: context [
+    *#xdata.Title*
+    #h(1fr)
+    #counter(page).display(
+      "1/1",
+      both: true,
+    )
+  ]
+)
+
+= #xdata.Title
+
+#let xrows = ()
+#for row in xdata.Rows {
+    let newrow = ([],)*pcols
+    let excess = ()
+    for item in row.Items {
+        let i = item.Day * HOURS.len() + item.Hour
+        let n = item.Data.duration
+        while n > 1 {
+            n -= 1
+            excess.push(i + n)
+        }
+        newrow.at(i) = ttvcell(..item.Data)
+    }
+    if excess.len() != 0 {
+        let xs = excess.sorted()
+        while xs.len() != 0 {
+            newrow.remove(xs.pop())
+        }
+    }
+    xrows += (row.Header,) + newrow
+}
+
+#let trows = (
+    (H_HEADER_HEIGHT1, H_HEADER_HEIGHT2)
+    + (ROW_HEIGHT,)*xdata.Rows.len()
+)
 
 #table(
     columns: tcolumns,
     rows: trows,
     gutter: 0pt,
     stroke: rgb(FRAME_COLOUR),
-    inset: 0pt,
+    inset: 1pt,
     fill: (x, y) =>
         if y > 1 and x > 0 {
             rgb(EMPTY_COLOUR)
         } else {
-            rgb(BREAK_COLOUR)
+            rgb(HEADER_COLOUR)
         },
-//  align: center + horizon,
     table.header(
-        [],
-        table.cell(colspan: HOURS.len(), [Montag]),
-        table.cell(colspan: HOURS.len(), [Dienstag]),
-        table.cell(colspan: HOURS.len(), [Mittwoch]),
-        table.cell(colspan: HOURS.len(), [Donnerstag]),
-        table.cell(colspan: HOURS.len(), [Freitag]),
-        [], table.cell(colspan: pcols, []),
+        ..dheader, ..pheader,
     ),
-    [One], table.cell(colspan: pcols, []),
-    [Two], table.cell(colspan: pcols, []),
-    [Three], table.cell(colspan: pcols, []),
+    ..xrows,
 )
-
-/*
-#show heading: it => text(weight: "bold", size: BIG_SIZE,
-    bottom-edge: "descender",
-    pad(left: 5mm, it))
-*/
-/*
-#let xdata = json(sys.inputs.ifile)
-
-#let page = 0
-#for (k, kdata) in xdata.Pages [
-    #{
-        if page != 0 {
-            pagebreak()
-        }
-        page += 1
-    }
-
-    = #k
-
-    #box([
-        #tbody
-        #for kd in kdata {
-            ttcell(..kd)
-        }
-    ])
-]
-*/
