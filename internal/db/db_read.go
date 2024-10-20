@@ -25,15 +25,15 @@ func dbread(dbpath string) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var id int
+		var Id int
 		var DATA []byte
 
-		err = rows.Scan(&id, &DATA)
+		err = rows.Scan(&Id, &DATA)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("ID %d: %s\n", id, DATA)
+		fmt.Printf("ID %d: %s\n", Id, DATA)
 		var jsonobj map[string]interface{}
 		err = json.Unmarshal([]byte(DATA), &jsonobj)
 		if err != nil {
